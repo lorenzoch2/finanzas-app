@@ -13,10 +13,9 @@ finanzas_app/
 │   ├── google_sheets_client.py
 │   ├── data_processor.py
 │   └── visualizations.py
-├── notebooks/
-│   └── analisis_finanzas.ipynb
 ├── config/
 │   └── credentials.json
+├── analisis_finanzas.ipynb
 ├── requirements.txt
 ├── .env
 └── README.md
