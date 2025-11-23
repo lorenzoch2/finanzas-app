@@ -11,35 +11,46 @@ class FinanceVisualizations:
     def plot_evolucion_finanzas(self):
         """Gráfico de evolución de entradas, salidas y ahorro"""
         df = self.processor.get_entradas_vs_salidas()
-        if df.empty:
-            print("❌ No hay datos para generar el gráfico")
-            return None
+        if df.empty or len(df) == 0:
+            print("❌ No hay datos suficientes para generar el gráfico de evolución")
+            return self._create_empty_plot("No hay datos disponibles")
+        
+        # Filtrar solo filas con al menos un dato numérico
+        df = df[df[['Entrada total', 'Salidas', 'Ahorro']].notna().any(axis=1)]
+        
+        if len(df) == 0:
+            print("❌ No hay valores numéricos en las columnas requeridas")
+            return self._create_empty_plot("Datos numéricos no disponibles")
         
         fig = go.Figure()
         
-        fig.add_trace(go.Scatter(
-            x=df['Fecha'], y=df['Entrada total'],
-            mode='lines+markers',
-            name='Entradas Totales',
-            line=dict(color='#2E8B57', width=3),
-            marker=dict(size=8)
-        ))
+        # Solo agregar trazas para columnas con datos
+        if df['Entrada total'].notna().any():
+            fig.add_trace(go.Scatter(
+                x=df['Fecha'], y=df['Entrada total'],
+                mode='lines+markers',
+                name='Entradas Totales',
+                line=dict(color='#2E8B57', width=3),
+                marker=dict(size=8)
+            ))
         
-        fig.add_trace(go.Scatter(
-            x=df['Fecha'], y=df['Salidas'],
-            mode='lines+markers',
-            name='Salidas',
-            line=dict(color='#DC143C', width=3),
-            marker=dict(size=8)
-        ))
+        if df['Salidas'].notna().any():
+            fig.add_trace(go.Scatter(
+                x=df['Fecha'], y=df['Salidas'],
+                mode='lines+markers',
+                name='Salidas',
+                line=dict(color='#DC143C', width=3),
+                marker=dict(size=8)
+            ))
         
-        fig.add_trace(go.Scatter(
-            x=df['Fecha'], y=df['Ahorro'],
-            mode='lines+markers',
-            name='Ahorro',
-            line=dict(color='#4169E1', width=3),
-            marker=dict(size=8)
-        ))
+        if df['Ahorro'].notna().any():
+            fig.add_trace(go.Scatter(
+                x=df['Fecha'], y=df['Ahorro'],
+                mode='lines+markers',
+                name='Ahorro',
+                line=dict(color='#4169E1', width=3),
+                marker=dict(size=8)
+            ))
         
         fig.update_layout(
             title='📈 Evolución de Finanzas Mensuales',
@@ -50,6 +61,24 @@ class FinanceVisualizations:
             height=500
         )
         
+        return fig
+    
+    def _create_empty_plot(self, message):
+        """Crea un gráfico vacío con mensaje"""
+        fig = go.Figure()
+        fig.add_annotation(
+            text=message,
+            xref="paper", yref="paper",
+            x=0.5, y=0.5,
+            showarrow=False,
+            font=dict(size=16)
+        )
+        fig.update_layout(
+            title="⚠️ Datos no disponibles",
+            xaxis=dict(visible=False),
+            yaxis=dict(visible=False),
+            height=400
+        )
         return fig
     
     def plot_gastos_por_categoria(self, año=None, top_n=10):
@@ -173,3 +202,194 @@ class FinanceVisualizations:
         )
         
         return fig
+    
+    def plot_gastos_mensuales_por_categoria(self, categoria=None, año=None, top_categorias=8):
+        """Gráfico de barras de gastos mensuales por categoría"""
+        
+        # Obtener datos
+        datos = self.processor.get_gastos_por_categoria_mensual(categoria, año)
+        
+        if datos.empty:
+            print("❌ No hay datos para generar el gráfico de gastos mensuales por categoría")
+            return self._create_empty_plot("No hay datos disponibles")
+        
+        if categoria:
+            # Gráfico para una categoría específica
+            fig = px.bar(
+                datos,
+                x='Mes_Año',
+                y='Total',
+                title=f'📊 Gastos Mensuales - {categoria} ({año if año else "Todos los años"})',
+                labels={'Mes_Año': 'Mes - Año', 'Total': 'Total Gastado (CLP)'},
+                color_discrete_sequence=['#FF6B6B']
+            )
+            
+            fig.update_layout(
+                xaxis_title='Mes - Año',
+                yaxis_title='Total Gastado (CLP)',
+                template='plotly_white',
+                height=500
+            )
+            
+            # Formatear eje Y con separadores de miles
+            fig.update_yaxes(tickformat=",.")
+            
+        else:
+            # Gráfico para todas las categorías (top N)
+            # Obtener las categorías con más gastos totales
+            gastos_totales = self.processor.get_gastos_por_categoria(año=año)
+            top_cats = gastos_totales.head(top_categorias).index.tolist()
+            
+            # Filtrar datos para solo las top categorías
+            datos_filtrados = datos[datos['Categoría'].isin(top_cats)]
+            
+            if datos_filtrados.empty:
+                print("❌ No hay datos para las categorías seleccionadas")
+                return self._create_empty_plot("No hay datos para las categorías seleccionadas")
+            
+            fig = px.bar(
+                datos_filtrados,
+                x='Mes_Año',
+                y='Total',
+                color='Categoría',
+                title=f'📊 Gastos Mensuales por Categoría ({año if año else "Todos los años"})',
+                labels={'Mes_Año': 'Mes - Año', 'Total': 'Total Gastado (CLP)'},
+                barmode='group'
+            )
+            
+            fig.update_layout(
+                xaxis_title='Mes - Año',
+                yaxis_title='Total Gastado (CLP)',
+                template='plotly_white',
+                height=600,
+                legend=dict(
+                    orientation="h",
+                    yanchor="bottom",
+                    y=1.02,
+                    xanchor="right",
+                    x=1
+                )
+            )
+            
+            # Formatear eje Y con separadores de miles
+            fig.update_yaxes(tickformat=",.")
+        
+        return fig
+
+    def plot_evolucion_categorias_individuales(self, año=None, top_categorias=6):
+        """Gráficos individuales de evolución para cada categoría top"""
+        
+        # Obtener categorías con más gastos
+        gastos_totales = self.processor.get_gastos_por_categoria(año=año)
+        top_cats = gastos_totales.head(top_categorias).index.tolist()
+        
+        if not top_cats:
+            print("❌ No hay categorías para mostrar")
+            return self._create_empty_plot("No hay datos de categorías")
+        
+        # Crear subplots
+        from plotly.subplots import make_subplots
+        import plotly.graph_objects as go
+        
+        fig = make_subplots(
+            rows=len(top_cats), 
+            cols=1,
+            subplot_titles=[f'📈 {categoria}' for categoria in top_cats],
+            vertical_spacing=0.05
+        )
+        
+        colors = px.colors.qualitative.Set3
+        
+        for i, categoria in enumerate(top_cats, 1):
+            datos_categoria = self.processor.get_gastos_por_categoria_mensual(categoria, año)
+            
+            if not datos_categoria.empty:
+                fig.add_trace(
+                    go.Bar(
+                        x=datos_categoria['Mes_Año'],
+                        y=datos_categoria['Total'],
+                        name=categoria,
+                        marker_color=colors[i % len(colors)],
+                        showlegend=False
+                    ),
+                    row=i, col=1
+                )
+        
+        fig.update_layout(
+            title_text=f'📊 Evolución Mensual por Categoría ({año if año else "Todos los años"})',
+            height=300 * len(top_cats),
+            template='plotly_white',
+            showlegend=False
+        )
+        
+        fig.update_yaxes(tickformat=",.")
+        
+        return fig
+
+
+    def plot_gastos_individual_por_categoria(self, año=None, categorias=None):
+        """Genera un gráfico independiente para CADA categoría"""
+        
+        # Obtener datos organizados por categoría
+        datos_por_categoria = self.processor.get_gastos_mensuales_por_categoria_individual(año)
+        
+        if not datos_por_categoria:
+            print("❌ No hay datos para generar gráficos por categoría")
+            return []
+        
+        # Filtrar categorías si se especifican
+        if categorias:
+            datos_por_categoria = {cat: data for cat, data in datos_por_categoria.items() 
+                                if cat in categorias}
+        
+        if not datos_por_categoria:
+            print("❌ No hay datos para las categorías seleccionadas")
+            return []
+        
+        figuras = []
+        
+        for categoria, datos in datos_por_categoria.items():
+            if datos.empty:
+                continue
+                
+            # Crear gráfico para esta categoría
+            fig = px.bar(
+                datos,
+                x='Mes_Año',
+                y='Total',
+                title=f'📊 {categoria} - Gastos Mensuales ({año if año else "Todos los años"})',
+                labels={'Mes_Año': 'Mes - Año', 'Total': 'Total Gastado (CLP)'},
+                color_discrete_sequence=['#FF6B6B']
+            )
+            
+            # Personalizar el gráfico
+            fig.update_layout(
+                xaxis_title='Mes - Año',
+                yaxis_title='Total Gastado (CLP)',
+                template='plotly_white',
+                height=500,
+                showlegend=False
+            )
+            
+            # Formatear eje Y con separadores de miles
+            fig.update_yaxes(tickformat=",.")
+            
+            # Agregar anotaciones con estadísticas
+            total_categoria = datos['Total'].sum()
+            max_gasto = datos['Total'].max()
+            min_gasto = datos['Total'].min()
+            
+            fig.add_annotation(
+                text=f"Total: ${total_categoria:,} CLP<br>Máximo: ${max_gasto:,} CLP<br>Mínimo: ${min_gasto:,} CLP",
+                xref="paper", yref="paper",
+                x=0.02, y=0.98,
+                showarrow=False,
+                bgcolor="white",
+                bordercolor="black",
+                borderwidth=1,
+                font=dict(size=10)
+            )
+            
+            figuras.append((categoria, fig))
+        
+        return figuras

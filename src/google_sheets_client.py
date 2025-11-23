@@ -2,6 +2,7 @@
 import os
 import gspread
 import pandas as pd
+import numpy as np
 from dotenv import load_dotenv
 from google.oauth2.service_account import Credentials
 
@@ -35,40 +36,55 @@ class GoogleSheetsClient:
             print(f"❌ Error en autenticación: {e}")
             return None
     
-    def get_sheet_data(self, sheet_name):
-        """Obtiene datos de una hoja específica como DataFrame"""
+    def get_sheet_data_with_formulas(self, sheet_name):
+        """Obtiene datos incluyendo resultados de fórmulas usando la API de Sheets v4"""
         try:
             if not self.client:
                 print("Cliente no autenticado")
                 return pd.DataFrame()
             
+            # Usar la API de Sheets v4 directamente para obtener valores formateados
             spreadsheet = self.client.open_by_key(self.spreadsheet_id)
             worksheet = spreadsheet.worksheet(sheet_name)
-            data = worksheet.get_all_records()
             
-            print(f"✅ Datos obtenidos de '{sheet_name}': {len(data)} registros")
-            return pd.DataFrame(data)
+            # Obtener todos los valores (incluyendo resultados de fórmulas)
+            all_values = worksheet.get_all_values()
+            
+            if not all_values or len(all_values) <= 1:
+                print(f'No se encontraron datos en {sheet_name}')
+                return pd.DataFrame()
+            
+            # La primera fila son los headers
+            headers = all_values[0]
+            data_rows = all_values[1:]
+            
+            # Crear DataFrame
+            df = pd.DataFrame(data_rows, columns=headers)
+            
+            print(f"✅ Datos obtenidos de '{sheet_name}': {len(df)} registros, {len(df.columns)} columnas")
+            return df
             
         except Exception as e:
-            print(f"❌ Error obteniendo datos de '{sheet_name}': {e}")
+            print(f"❌ Error obteniendo '{sheet_name}': {e}")
             return pd.DataFrame()
     
     def get_control_mensual(self):
-        """Obtiene datos de la hoja Control mensual"""
-        return self.get_sheet_data(self.sheet_control)
+        """Obtiene datos de Control mensual con fórmulas ejecutadas"""
+        return self.get_sheet_data_with_formulas(self.sheet_control)
     
     def get_salidas(self):
-        """Obtiene datos de la hoja Salidas"""
-        return self.get_sheet_data(self.sheet_salidas)
+        """Obtiene datos de Salidas con fórmulas ejecutadas"""
+        return self.get_sheet_data_with_formulas(self.sheet_salidas)
     
     def get_entradas(self):
-        """Obtiene datos de la hoja Entradas"""
-        return self.get_sheet_data(self.sheet_entradas)
+        """Obtiene datos de Entradas con fórmulas ejecutadas"""
+        return self.get_sheet_data_with_formulas(self.sheet_entradas)
     
     def get_sheet_names(self):
         """Obtiene los nombres de todas las hojas disponibles"""
         try:
             if not self.client:
+                print("❌ Cliente no autenticado")
                 return []
             
             spreadsheet = self.client.open_by_key(self.spreadsheet_id)
@@ -76,6 +92,7 @@ class GoogleSheetsClient:
             sheet_names = [worksheet.title for worksheet in worksheets]
             print(f"📊 Hojas disponibles: {sheet_names}")
             return sheet_names
+            
         except Exception as e:
-            print(f"Error al obtener nombres de hojas: {e}")
+            print(f"❌ Error al obtener nombres de hojas: {e}")
             return []
