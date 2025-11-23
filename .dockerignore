@@ -1,0 +1,8 @@
+.env
+.venv
+*.json
+fifth-howl-439004-q6-e74f17b53002*
+config/*
+credentials.json
+registry
+notebooks/*

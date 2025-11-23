@@ -1,0 +1,14 @@
+# docker-compose.yml
+services:
+  tableau-repository:
+    build: .
+    mem_limit: 8g  # Limit to 8GB RAM
+    mem_reservation: 1g  # Reserve at least 1GB
+    container_name: tableau-repository-app
+    volumes:
+      - ./append_files:/code/append_files
+      - ./logs:/code/logs  # To persist logs
+      - ${ADC:-./applications_credentials.json}:/tmp/keys/application_default_credentials.json:ro
+    env_file:
+      - docker.env
+    restart: "no"
