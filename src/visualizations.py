@@ -393,3 +393,171 @@ class FinanceVisualizations:
             figuras.append((categoria, fig))
         
         return figuras
+    
+    def plot_gastos_individual_por_categoria(self, año=None, categorias=None):
+        """Genera un gráfico independiente para CADA categoría con etiquetas de valor y colores personalizados"""
+        
+        # ⚡️ ÚNICO DICCIONARIO DE COLORES - MODIFICA SOLO AQUÍ
+        colores_categorias = {
+            # MODIFICA ESTOS COLORES HEX SEGÚN TUS PREFERENCIAS
+            'Arriendo/Hipoteca': "#BB1A1A",
+            'Servicios básicos': '#BB1A1A',
+            'Internet/Telefonía': "#EB7670",
+            'Suscripciones': "#EFAC7C",
+            'Transporte': '#EB7670',
+            'Seguros': "#73E5F2",
+            'Educación': '#EB7670',
+            'Supermercado/Feria': "#109624",
+            'Salud': "#3C53FF",
+            'Compras personales': "#5CFAFF",
+            'Restaurantes/Comida rápida': "#FFED47",
+            'Entretenimiento': '#FFED47',
+            'Regalos': "#FF9FF2",
+            'Viajes': '#73E5F2',
+            'Imprevistos': "#B5FFE6",
+            'Ahorro': "#961EFF"
+            # Agrega más categorías según necesites con formato HEX: '#RRGGBB'
+        }
+        
+        # Obtener datos organizados por categoría
+        datos_por_categoria = self.processor.get_gastos_mensuales_por_categoria_individual(año)
+        
+        if not datos_por_categoria:
+            print("❌ No hay datos para generar gráficos por categoría")
+            return []
+        
+        # Filtrar categorías si se especifican
+        if categorias:
+            datos_por_categoria = {cat: data for cat, data in datos_por_categoria.items() 
+                                if cat in categorias}
+        
+        if not datos_por_categoria:
+            print("❌ No hay datos para las categorías seleccionadas")
+            return []
+        
+        figuras = []
+        
+        for categoria, datos in datos_por_categoria.items():
+            if datos.empty:
+                continue
+                
+            # Obtener color para esta categoría (usar color por defecto si no está en el diccionario)
+            color_categoria = colores_categorias.get(categoria, '#6495ED')  # Azul por defecto
+            
+            # Crear gráfico para esta categoría
+            fig = px.bar(
+                datos,
+                x='Mes_Año',
+                y='Total',
+                title=f'📊 {categoria} - Gastos Mensuales ({año if año else "Todos los años"})',
+                labels={'Mes_Año': 'Mes - Año', 'Total': 'Total Gastado (CLP)'},
+                color_discrete_sequence=[color_categoria]
+            )
+            
+            # AGREGAR ETIQUETAS DE VALOR EN LAS BARRAS
+            fig.update_traces(
+                texttemplate='$%{y:,}',
+                textposition='outside',
+                textfont=dict(size=10, color='black'),
+                hovertemplate='<b>%{x}</b><br>Total: $%{y:,} CLP<extra></extra>'
+            )
+            
+            # Personalizar el gráfico
+            fig.update_layout(
+                xaxis_title='Mes - Año',
+                yaxis_title='Total Gastado (CLP)',
+                template='plotly_white',
+                height=500,
+                showlegend=False,
+                # Ajustar márgenes para que quepan las etiquetas
+                margin=dict(t=80, b=100, l=80, r=80)
+            )
+            
+            # Formatear eje Y con separadores de miles
+            fig.update_yaxes(tickformat=",.")
+            
+            # Rotar etiquetas del eje X para mejor legibilidad
+            fig.update_xaxes(tickangle=45)
+            
+            # Agregar anotaciones con estadísticas
+            total_categoria = datos['Total'].sum()
+            max_gasto = datos['Total'].max()
+            min_gasto = datos['Total'].min()
+            promedio_gasto = datos['Total'].mean()
+            
+            fig.add_annotation(
+                text=f"<b>Estadísticas:</b><br>"
+                    f"Total: ${total_categoria:,} CLP<br>"
+                    f"Promedio: ${promedio_gasto:,.0f} CLP<br>"
+                    f"Máximo: ${max_gasto:,} CLP<br>"
+                    f"Mínimo: ${min_gasto:,} CLP",
+                xref="paper", yref="paper",
+                x=0.02, y=0.98,
+                showarrow=False,
+                bgcolor="rgba(255, 255, 255, 0.8)",
+                bordercolor="black",
+                borderwidth=1,
+                borderpad=4,
+                font=dict(size=10, color="black"),
+                align="left"
+            )
+            
+            # Agregar número de meses con datos
+            fig.add_annotation(
+                text=f"Meses con datos: {len(datos)}",
+                xref="paper", yref="paper",
+                x=0.98, y=0.98,
+                showarrow=False,
+                bgcolor="rgba(255, 255, 255, 0.8)",
+                bordercolor="black",
+                borderwidth=1,
+                borderpad=4,
+                font=dict(size=10, color="black"),
+                align="right"
+            )
+            
+            figuras.append((categoria, fig))
+        
+        return figuras
+
+    def mostrar_diccionario_colores(self):
+        """Muestra el diccionario de colores actual (usa el MISMO diccionario)"""
+        # ⚡️ USA EL MISMO DICCIONARIO - NO CREA UNO NUEVO
+        from .visualizations import FinanceVisualizations
+        
+        # Crear instancia temporal para acceder al diccionario
+        temp_instance = FinanceVisualizations(self.processor)
+        
+        print("🎨 DICCIONARIO DE COLORES ACTUAL (formato HEX):")
+        print("Para modificar, edita el diccionario 'colores_categorias' en la función 'plot_gastos_individual_por_categoria'")
+        print("\nColores actuales:")
+        
+        # Obtener el diccionario actual llamando a la función
+        figuras = temp_instance.plot_gastos_individual_por_categoria()
+        if hasattr(temp_instance, 'colores_categorias'):
+            colores_actuales = temp_instance.colores_categorias
+        else:
+            # Si no se puede acceder, mostrar el diccionario por defecto
+            colores_actuales = {
+                'Arriendo/Hipoteca': "#BB1A1A",
+                'Servicios básicos': '#BB1A1A',
+                'Internet/Telefonía': "#EB7670",
+                'Suscripciones': "#EFAC7C",
+                'Transporte': '#EB7670',
+                'Seguros': "#73E5F2",
+                'Educación': '#EB7670',
+                'Supermercado/Feria': "#109624",
+                'Salud': "#3C53FF",
+                'Compras personales': "#5CFAFF",
+                'Restaurantes/Comida rápida': "#FFED47",
+                'Entretenimiento': '#FFED47',
+                'Regalos': "#FF9FF2",
+                'Viajes': '#73E5F2',
+                'Imprevistos': "#B5FFE6",
+                'Ahorro': "#961EFF"
+            }
+        
+        for categoria, color in colores_actuales.items():
+            print(f"  '{categoria}': '{color}'")
+        
+        return colores_actuales
