@@ -6,19 +6,28 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint \"src/**/*.{js,jsx}\"",
+    "format": "prettier --write src/**/*.{js,jsx,css,ts,tsx}",
+    "desktop:build": "npm run build",
+    "desktop:start": "electron ."
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.56.1",
     "lucide-react": "^0.542.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "@supabase/supabase-js": "^2.56.1"
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.6.0",
     "autoprefixer": "^10.4.21",
+    "electron": "^43.2.0",
+    "eslint": "^10.8.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.22.0",
     "postcss": "^8.5.6",
+    "prettier": "^3.9.6",
     "tailwindcss": "^3.4.17",
-    "vite": "^5.4.20"
+    "vite": "^8.1.5"
   }
 }
