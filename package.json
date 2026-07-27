@@ -2,6 +2,10 @@
   "name": "finanzas-app",
   "private": true,
   "version": "0.0.0",
+  "description": "Finanzapp, gestión de finanzas personales en escritorio, construida con Electron, React y Vite.",
+  "author": "Lorenzo",
+  "main": "main.cjs",
+
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -22,9 +26,11 @@
     "@vitejs/plugin-react": "^4.6.0",
     "autoprefixer": "^10.4.21",
     "electron": "^43.2.0",
+    "electron-builder": "^26.15.3",
     "eslint": "^10.8.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react": "^7.22.0",
+    "png-to-ico": "^3.0.2",
     "postcss": "^8.5.6",
     "prettier": "^3.9.6",
     "tailwindcss": "^3.4.17",
