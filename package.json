@@ -1,39 +1,17 @@
 {
-  "name": "finanzas-app",
+  "name": "finanzapp",
   "private": true,
-  "version": "0.0.0",
-  "description": "Finanzapp, gestión de finanzas personales en escritorio, construida con Electron, React y Vite.",
+  "version": "2.0.0",
+  "description": "Finanzapp — gestión de finanzas personales. PWA mobile-first sobre Supabase.",
   "author": "Lorenzo",
-  "main": "main.cjs",
-
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "lint": "eslint \"src/**/*.{js,jsx}\"",
-    "format": "prettier --write src/**/*.{js,jsx,css,ts,tsx}",
-    "desktop:build": "npm run build",
-    "desktop:start": "electron ."
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.56.1",
-    "lucide-react": "^0.542.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-react": "^4.6.0",
-    "autoprefixer": "^10.4.21",
-    "electron": "^43.2.0",
-    "electron-builder": "^26.15.3",
-    "eslint": "^10.8.0",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-react": "^7.22.0",
-    "png-to-ico": "^3.0.2",
-    "postcss": "^8.5.6",
-    "prettier": "^3.9.6",
-    "tailwindcss": "^3.4.17",
-    "vite": "^8.1.5"
+    "typecheck": "tsc -b --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "golden": "node scripts/capture-legacy-balances.mjs"
   }
 }
