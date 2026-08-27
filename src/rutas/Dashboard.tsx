@@ -41,6 +41,15 @@ export default function Dashboard() {
 
   const error = saldos.error ?? resumen.error;
 
+  // El total disponible se suma aquí en vez de pedírselo a la base. Antes lo
+  // devolvía `resumen_mensual`, que para calcularlo volvía a ejecutar el
+  // cálculo completo de saldos: la misma pantalla lo hacía dos veces. Sumar
+  // tres números en el cliente es gratis.
+  const totalDisponible = (saldos.data ?? []).reduce(
+    (suma, fuente) => suma + Number(fuente.saldo_actual || 0),
+    0,
+  );
+
   return (
     <section className="space-y-6">
       {error ? (
@@ -55,9 +64,9 @@ export default function Dashboard() {
           icono={<Wallet size={18} aria-hidden />}
           tono="bg-brand-50 text-brand-700"
           titulo="Total disponible"
-          valor={formatearCLP(resumen.data?.total_disponible)}
+          valor={formatearCLP(totalDisponible)}
           nota="Balance consolidado por fuente de dinero."
-          cargando={resumen.isPending}
+          cargando={saldos.isPending}
         />
         <Tarjeta
           icono={<ArrowDownLeft size={18} aria-hidden />}

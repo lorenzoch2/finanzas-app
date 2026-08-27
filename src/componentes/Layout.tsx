@@ -3,6 +3,7 @@ import { Link, useRouterState } from '@tanstack/react-router';
 import { LayoutDashboard, LogOut, Receipt, Settings2, Tags, WalletCards } from 'lucide-react';
 import { useSesion } from '@/auth/SesionProvider';
 import SelectorMes from './SelectorMes';
+import BannerOffline from './BannerOffline';
 
 /**
  * Estructura de la app.
@@ -81,7 +82,10 @@ export default function Layout({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl space-y-6 px-4 py-5 sm:px-6 lg:px-8">{children}</main>
+      <main className="mx-auto max-w-7xl space-y-6 px-4 py-5 sm:px-6 lg:px-8">
+        <BannerOffline />
+        {children}
+      </main>
 
       {/* Navegación móvil, al alcance del pulgar */}
       <nav className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur-xl md:hidden">

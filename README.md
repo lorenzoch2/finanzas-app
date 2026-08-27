@@ -53,6 +53,7 @@ login de la app y recién entonces aplica las migraciones.
 | `0006_saldos_rpc` | `saldos_por_fuente()` y `resumen_mensual()`. |
 | `0007_guardar_transaccion` | Guardado y borrado atómicos. |
 | `0008_cerrar_huecos` | Elimina `uso_productos`, que quedó sin RLS, y revoca `EXECUTE` de `PUBLIC`. |
+| `0009_resumen_sin_duplicar` | `resumen_mensual` deja de recalcular los saldos; el total lo suma el cliente. |
 
 Antes y después están `supabase/checks/pre-migration.sql` y `post-migration.sql`, que son solo
 lectura y sirven para comparar conteos.

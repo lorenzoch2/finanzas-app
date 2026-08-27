@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { claves } from '@/lib/query';
 import { mensajeDeError, supabase } from '@/lib/supabase';
 import { rangoDelMes } from '@/lib/fecha';
+import { encolar, esFalloDeRed, leerCola, quitarDeCola } from '@/lib/colaOffline';
 import type { Json, TipoTransaccion, TransaccionConDetalle } from '@/lib/database.types';
 
 /**
@@ -82,6 +83,27 @@ const invalidarTodo = (qc: ReturnType<typeof useQueryClient>) => {
   void qc.invalidateQueries({ queryKey: ['resumen'] });
 };
 
+export interface ResultadoGuardado {
+  id: string | null;
+  encolada: boolean;
+}
+
+/** Envía una transacción al servidor. Lanza si falla, sea por red o rechazo. */
+const enviarTransaccion = async (
+  transaccion: TransaccionFormulario,
+  items: ItemFormulario[],
+  id: string | null,
+): Promise<string> => {
+  const { data, error } = await supabase.rpc('guardar_transaccion', {
+    p_transaccion: transaccion as unknown as Json,
+    p_items: items as unknown as Json,
+    p_id: id,
+  });
+
+  if (error) throw new Error(mensajeDeError(error));
+  return data as string;
+};
+
 export function useGuardarTransaccion() {
   const qc = useQueryClient();
 
@@ -94,21 +116,64 @@ export function useGuardarTransaccion() {
       id?: string | null;
       transaccion: TransaccionFormulario;
       items: ItemFormulario[];
-    }): Promise<string> => {
-      const { data, error } = await supabase.rpc('guardar_transaccion', {
-        p_transaccion: transaccion as unknown as Json,
-        p_items: items as unknown as Json,
-        p_id: id ?? null,
-      });
-
-      if (error) throw new Error(mensajeDeError(error));
-      return data as string;
+    }): Promise<ResultadoGuardado> => {
+      try {
+        const nuevoId = await enviarTransaccion(transaccion, items, id ?? null);
+        return { id: nuevoId, encolada: false };
+      } catch (error) {
+        // Solo se encolan transacciones NUEVAS y solo ante fallos de red.
+        // Una edición encolada obligaría a resolver conflictos, y un rechazo
+        // del servidor fallaría igual en cada reintento.
+        if (!id && esFalloDeRed(error)) {
+          encolar(transaccion, items);
+          return { id: null, encolada: true };
+        }
+        throw error;
+      }
     },
-    onSuccess: (_id, variables) => {
+    onSuccess: (resultado, variables) => {
       invalidarTodo(qc);
+      if (resultado.encolada) void qc.invalidateQueries({ queryKey: claves.cola });
       if (variables.id) {
         void qc.invalidateQueries({ queryKey: claves.transaccion(variables.id) });
       }
+    },
+  });
+}
+
+/**
+ * Vacía la cola pendiente contra el servidor.
+ *
+ * Se detiene al primer fallo de red en vez de seguir intentando el resto: si
+ * la conexión se cayó, los siguientes van a fallar igual, y reintentarlos solo
+ * gasta batería. Un rechazo del servidor sí saca la operación de la cola,
+ * porque reintentarla eternamente no la va a arreglar.
+ */
+export function useSincronizarCola() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (): Promise<{ enviadas: number; descartadas: number; pendientes: number }> => {
+      let enviadas = 0;
+      let descartadas = 0;
+
+      for (const operacion of leerCola()) {
+        try {
+          await enviarTransaccion(operacion.transaccion, operacion.items, null);
+          quitarDeCola(operacion.id);
+          enviadas += 1;
+        } catch (error) {
+          if (esFalloDeRed(error)) break;
+          quitarDeCola(operacion.id);
+          descartadas += 1;
+        }
+      }
+
+      return { enviadas, descartadas, pendientes: leerCola().length };
+    },
+    onSuccess: () => {
+      invalidarTodo(qc);
+      void qc.invalidateQueries({ queryKey: claves.cola });
     },
   });
 }

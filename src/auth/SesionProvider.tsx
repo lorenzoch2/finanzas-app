@@ -16,6 +16,14 @@ interface EstadoSesion {
   sesion: Session | null;
   usuario: User | null;
   cargando: boolean;
+  /**
+   * True cuando el usuario llegó desde un enlace de recuperación de contraseña.
+   * Supabase abre una sesión válida en ese caso, así que sin esta bandera la
+   * app lo dejaría entrar al dashboard sin haber cambiado nunca la clave, y el
+   * enlace no habría servido de nada.
+   */
+  recuperandoPassword: boolean;
+  terminarRecuperacion: () => void;
   cerrarSesion: () => Promise<void>;
 }
 
@@ -24,6 +32,7 @@ const SesionContext = createContext<EstadoSesion | null>(null);
 export function SesionProvider({ children }: { children: ReactNode }) {
   const [sesion, setSesion] = useState<Session | null>(null);
   const [cargando, setCargando] = useState(true);
+  const [recuperandoPassword, setRecuperandoPassword] = useState(false);
 
   useEffect(() => {
     let activo = true;
@@ -41,8 +50,12 @@ export function SesionProvider({ children }: { children: ReactNode }) {
     // Cubre el refresco de token, el cierre de sesión en otra pestaña y la
     // expiración. Sin esto, la app seguiría mostrando datos con una sesión
     // muerta hasta el próximo request fallido.
-    const { data: suscripcion } = supabase.auth.onAuthStateChange((_evento, nuevaSesion) => {
+    const { data: suscripcion } = supabase.auth.onAuthStateChange((evento, nuevaSesion) => {
       if (!activo) return;
+
+      if (evento === 'PASSWORD_RECOVERY') setRecuperandoPassword(true);
+      if (evento === 'SIGNED_OUT') setRecuperandoPassword(false);
+
       setSesion(nuevaSesion);
       setCargando(false);
     });
@@ -57,9 +70,18 @@ export function SesionProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   }, []);
 
+  const terminarRecuperacion = useCallback(() => setRecuperandoPassword(false), []);
+
   const valor = useMemo<EstadoSesion>(
-    () => ({ sesion, usuario: sesion?.user ?? null, cargando, cerrarSesion }),
-    [sesion, cargando, cerrarSesion],
+    () => ({
+      sesion,
+      usuario: sesion?.user ?? null,
+      cargando,
+      recuperandoPassword,
+      terminarRecuperacion,
+      cerrarSesion,
+    }),
+    [sesion, cargando, recuperandoPassword, terminarRecuperacion, cerrarSesion],
   );
 
   return <SesionContext.Provider value={valor}>{children}</SesionContext.Provider>;

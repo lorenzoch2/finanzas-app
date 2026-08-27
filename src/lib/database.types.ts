@@ -223,8 +223,10 @@ export interface Database {
       };
       resumen_mensual: {
         Args: { p_mes: string; p_tz?: string };
+        // total_disponible salió de aquí en la migración 0009: lo calculaba
+        // llamando otra vez a saldos_por_fuente. Ahora lo suma el cliente con
+        // las filas que ya tiene.
         Returns: {
-          total_disponible: number;
           ingresos: number;
           gastos: number;
         }[];

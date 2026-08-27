@@ -8,6 +8,8 @@ import { EstadoAppProvider } from '@/lib/estadoApp';
 import { queryClient } from '@/lib/query';
 import { router } from '@/router';
 import Login from '@/rutas/Login';
+import CambiarPassword from '@/rutas/CambiarPassword';
+import LimiteDeError from '@/componentes/LimiteDeError';
 import './index.css';
 
 /**
@@ -19,7 +21,7 @@ import './index.css';
  */
 
 function Puerta() {
-  const { sesion, cargando } = useSesion();
+  const { sesion, cargando, recuperandoPassword } = useSesion();
 
   // Mientras se recupera la sesión guardada no se sabe si hay usuario.
   // Tratar este instante como "sin sesión" haría parpadear el login en cada
@@ -34,6 +36,11 @@ function Puerta() {
 
   if (!sesion) return <Login />;
 
+  // Va antes del router: quien llega por el enlace de recuperación tiene una
+  // sesión válida, así que si no se le corta el paso aquí entraría al
+  // dashboard sin haber cambiado nunca la contraseña.
+  if (recuperandoPassword) return <CambiarPassword />;
+
   return (
     <EstadoAppProvider>
       <RouterProvider router={router} />
@@ -46,10 +53,12 @@ if (!contenedor) throw new Error('No se encontró #root en index.html.');
 
 createRoot(contenedor).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <SesionProvider>
-        <Puerta />
-      </SesionProvider>
-    </QueryClientProvider>
+    <LimiteDeError>
+      <QueryClientProvider client={queryClient}>
+        <SesionProvider>
+          <Puerta />
+        </SesionProvider>
+      </QueryClientProvider>
+    </LimiteDeError>
   </StrictMode>,
 );

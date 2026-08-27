@@ -37,7 +37,7 @@ export function useResumen(mes: string, zona: string) {
         p_tz: zona,
       });
       if (error) throw new Error(mensajeDeError(error));
-      return data?.[0] ?? { total_disponible: 0, ingresos: 0, gastos: 0 };
+      return data?.[0] ?? { ingresos: 0, gastos: 0 };
     },
   });
 }
