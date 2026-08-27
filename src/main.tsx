@@ -45,7 +45,6 @@ function Puerta() {
   return (
     <EstadoAppProvider>
       <RouterProvider router={router} />
-      <AvisoActualizacion />
     </EstadoAppProvider>
   );
 }
@@ -77,6 +76,13 @@ raiz.render(
         <SesionProvider>
           <Puerta />
         </SesionProvider>
+        {/*
+          Fuera de <Puerta> a propósito. AvisoActualizacion es quien registra
+          el service worker, y montarlo dentro del árbol autenticado hacía que
+          en la pantalla de login no se registrara nunca. Sin service worker
+          no hay instalación posible: el navegador ni siquiera ofrece el botón.
+        */}
+        <AvisoActualizacion />
       </QueryClientProvider>
     </LimiteDeError>
   </StrictMode>,
