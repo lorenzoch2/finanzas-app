@@ -69,6 +69,16 @@ const literalAEscape = (contenido) => {
 };
 
 /**
+ * ¿El literal que viene a continuación es el mensaje de un RAISE?
+ *
+ * Se mira lo ya emitido, porque el texto anterior es lo que determina el
+ * contexto. Cubre tanto `raise exception '...'` como
+ * `raise exception using message = '...'`.
+ */
+const esMensajeDeRaise = (emitido) =>
+  /\braise\s+(notice|exception|warning|info|debug|log)\s*$/i.test(emitido.slice(-60));
+
+/**
  * Recorre el SQL distinguiendo literales, comentarios y bloques con comillas
  * de dólar. Hace falta ese cuidado porque una apóstrofe dentro de un
  * comentario no abre un literal, y un literal dentro del cuerpo de una
@@ -127,7 +137,12 @@ export function aAscii(sql) {
         contenido += sql[j];
         j += 1;
       }
-      salida += literalAEscape(contenido);
+
+      // RAISE es la excepción: PL/pgSQL parsea su mensaje como un literal
+      // simple, no como una expresión, así que un U&'...' ahí es un error de
+      // sintaxis. Como son mensajes de diagnóstico, basta con quitarles los
+      // acentos: nadie compara su texto con un dato guardado.
+      salida += esMensajeDeRaise(salida) ? `'${transliterar(contenido)}'` : literalAEscape(contenido);
       i = j + 1;
       continue;
     }

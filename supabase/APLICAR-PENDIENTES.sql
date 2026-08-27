@@ -152,7 +152,7 @@ begin
       where nombre = r.padre and parent_id is null and user_id = v_usuario;
 
     if v_padre is null then
-      raise exception U&'No se encontr\00F3 la categor\00EDa padre %', r.padre;
+      raise exception 'No se encontro la categoria padre %', r.padre;
     end if;
 
     insert into public.categorias (nombre, parent_id, user_id)
@@ -254,7 +254,7 @@ begin
   where i.nombre_producto = m.producto;
 
   get diagnostics v_migrados = row_count;
-  raise notice U&'\00CDtems recategorizados: %', v_migrados;
+  raise notice 'Items recategorizados: %', v_migrados;
 
   -- Nada puede quedarse atras sin que se note.
   select count(*) into v_sin_mapa
@@ -262,9 +262,9 @@ begin
   where i.categoria_id is null;
 
   if v_sin_mapa > 0 then
-    raise warning U&'% \00EDtems quedaron sin categor\00EDa. Revisa scripts/taxonomia.mjs.', v_sin_mapa;
+    raise warning '% items quedaron sin categoria. Revisa scripts/taxonomia.mjs.', v_sin_mapa;
   else
-    raise notice U&'Todos los \00EDtems tienen categor\00EDa.';
+    raise notice 'Todos los items tienen categoria.';
   end if;
 end $$;
 
@@ -287,7 +287,7 @@ begin
   where c.nombre like '%(antigua)';
 
   if v_en_uso is not null then
-    raise warning U&'Categor\00EDas antiguas todav\00EDa con \00EDtems, no se borran: %', v_en_uso;
+    raise warning 'Categorias antiguas todavia con items, no se borran: %', v_en_uso;
   end if;
 
   delete from public.categorias c
@@ -297,7 +297,7 @@ begin
   -- No se comprueba `productos`: esa tabla nace en 0011, despues de esta.
 
   get diagnostics v_borradas = row_count;
-  raise notice U&'Categor\00EDas antiguas retiradas: %', v_borradas;
+  raise notice 'Categorias antiguas retiradas: %', v_borradas;
 end $$;
 
 commit;
@@ -625,13 +625,13 @@ begin
   where i.id = v.item_id;
 
   get diagnostics v_ligados = row_count;
-  raise notice U&'\00CDtems vinculados a un producto: %', v_ligados;
+  raise notice 'Items vinculados a un producto: %', v_ligados;
 
   select count(*) into v_huerfanos from public.items_detalle where producto_id is null;
   if v_huerfanos > 0 then
-    raise warning U&'% \00EDtems quedaron sin producto.', v_huerfanos;
+    raise warning '% items quedaron sin producto.', v_huerfanos;
   else
-    raise notice U&'Todos los \00EDtems tienen producto.';
+    raise notice 'Todos los items tienen producto.';
   end if;
 end $$;
 
@@ -853,7 +853,7 @@ declare
   v_usuario uuid := auth.uid();
 begin
   if v_usuario is null then
-    raise exception U&'Sin sesi\00F3n activa.' using errcode = '42501';
+    raise exception 'Sin sesion activa.' using errcode = '42501';
   end if;
 
   if p_id is null then
@@ -887,7 +887,7 @@ begin
     returning id into v_id;
 
     if v_id is null then
-      raise exception U&'La transacci\00F3n % no existe o no es tuya.', p_id using errcode = '42501';
+      raise exception 'La transaccion % no existe o no es tuya.', p_id using errcode = '42501';
     end if;
 
     delete from public.items_detalle where transaccion_id = v_id;

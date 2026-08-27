@@ -91,7 +91,17 @@ while (i < sql.length) {
   i += 1;
 }
 
-// 3) begin / commit emparejados
+// 3) RAISE con literal escapado: PL/pgSQL no lo acepta
+const raiseMalo = [...sql.matchAll(/\braise\s+(notice|exception|warning|info|debug|log)\s+U&'/gi)];
+for (const m of raiseMalo) {
+  const hasta = sql.slice(0, m.index).split('\n').length;
+  problemas.push(
+    `Linea ${hasta}: RAISE con literal U&'...'. PL/pgSQL parsea el mensaje de ` +
+      `RAISE como literal simple y da error de sintaxis. Debe ir sin acentos.`,
+  );
+}
+
+// 4) begin / commit emparejados
 const begins = (sql.match(/^begin;/gm) ?? []).length;
 const commits = (sql.match(/^commit;/gm) ?? []).length;
 if (begins !== commits) {
