@@ -14,7 +14,10 @@
     "test:watch": "vitest",
     "golden": "node scripts/capture-legacy-balances.mjs",
     "verificar-migracion": "node scripts/verificar-migracion.mjs",
-    "iconos": "pwa-assets-generator"
+    "iconos": "pwa-assets-generator",
+    "sql": "node scripts/generar-sql.mjs && node scripts/validar-sql.mjs",
+    "backup": "node scripts/backup.mjs",
+    "categorias": "node scripts/proponer-categorias.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
