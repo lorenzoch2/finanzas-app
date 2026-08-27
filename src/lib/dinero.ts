@@ -20,16 +20,8 @@ const FORMATO_CLP = new Intl.NumberFormat('es-CL', {
   maximumFractionDigits: 0,
 });
 
-const FORMATO_NUMERO = new Intl.NumberFormat('es-CL', {
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 0,
-});
-
 export const formatearCLP = (valor: number | string | null | undefined): string =>
   FORMATO_CLP.format(aNumero(valor));
-
-export const formatearNumero = (valor: number | string | null | undefined): string =>
-  FORMATO_NUMERO.format(aNumero(valor));
 
 export const aNumero = (valor: number | string | null | undefined): number => {
   const n = Number(valor ?? 0);
