@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Loader2, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Plus, Star, Trash2 } from 'lucide-react';
 import { useBorrarAjuste, useCrearAjuste, useAjustes } from '@/datos/ajustes';
-import { useCrearFuente, useFuentes, useSaldos } from '@/datos/saldos';
+import { useCrearFuente, useFuentes, useMarcarPrincipal, useSaldos } from '@/datos/saldos';
+import FormularioTransferencia from '@/componentes/FormularioTransferencia';
 import { useEstadoApp } from '@/lib/estadoApp';
 import { formatearCLP, parsearMonto } from '@/lib/dinero';
 import { formatearFechaSola, paraInputDate } from '@/lib/fecha';
@@ -16,6 +17,7 @@ export default function Saldos() {
   const crearFuente = useCrearFuente();
   const crearAjuste = useCrearAjuste();
   const borrarAjuste = useBorrarAjuste();
+  const marcarPrincipal = useMarcarPrincipal();
 
   const [nombreFuente, setNombreFuente] = useState('');
   const [tipoFuente, setTipoFuente] = useState('cuenta');
@@ -81,14 +83,47 @@ export default function Saldos() {
 
         <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {saldos.data?.map((fuente) => (
-            <div key={fuente.fuente_id} className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4">
+            <div
+              key={fuente.fuente_id}
+              className={`rounded-3xl border p-4 ${
+                fuente.es_principal
+                  ? 'border-brand-200 bg-brand-50/60'
+                  : 'border-slate-200 bg-slate-50/80'
+              }`}
+            >
               <div className="flex items-center justify-between gap-2">
                 <h3 className="truncate font-semibold text-slate-900">{fuente.nombre}</h3>
                 <span className="chip shrink-0 bg-white">{fuente.tipo}</span>
               </div>
+
               <p className="mt-2 text-xl font-black tabular-nums text-slate-900">
                 {formatearCLP(fuente.saldo_actual)}
               </p>
+
+              {/*
+                La principal es la que viene preseleccionada al registrar un
+                gasto. La base admite una sola, con un indice unico parcial, de
+                modo que no depende de que la interfaz se acuerde de desmarcar
+                la anterior.
+              */}
+              <button
+                type="button"
+                className={`mt-3 inline-flex items-center gap-1.5 text-xs font-medium ${
+                  fuente.es_principal ? 'text-brand-700' : 'text-slate-400 hover:text-slate-600'
+                }`}
+                onClick={() => {
+                  if (!fuente.es_principal) marcarPrincipal.mutate(fuente.fuente_id);
+                }}
+                disabled={fuente.es_principal || marcarPrincipal.isPending}
+                aria-pressed={fuente.es_principal}
+              >
+                <Star
+                  size={14}
+                  aria-hidden
+                  className={fuente.es_principal ? 'fill-brand-500 text-brand-500' : ''}
+                />
+                {fuente.es_principal ? 'Cuenta principal' : 'Hacer principal'}
+              </button>
             </div>
           ))}
         </div>
@@ -121,6 +156,8 @@ export default function Saldos() {
           </button>
         </form>
       </div>
+
+      <FormularioTransferencia />
 
       <div className="card p-5 sm:p-6">
         <h2 className="mb-4 text-lg font-bold text-slate-900">Ajustes de saldo</h2>

@@ -56,6 +56,12 @@ const categoriasRoute = createRoute({
   component: lazyRouteComponent(() => import('@/rutas/Categorias')),
 });
 
+const analisisRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/analisis',
+  component: lazyRouteComponent(() => import('@/rutas/Analisis')),
+});
+
 const preferenciasRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/preferencias',
@@ -65,6 +71,7 @@ const preferenciasRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   dashboardRoute,
   movimientosRoute,
+  analisisRoute,
   saldosRoute,
   categoriasRoute,
   preferenciasRoute,

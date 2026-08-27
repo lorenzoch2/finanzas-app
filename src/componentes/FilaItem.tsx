@@ -1,12 +1,12 @@
 import { useWatch } from 'react-hook-form';
 import type { Control, UseFormRegister, UseFormSetValue } from 'react-hook-form';
 import { Trash2 } from 'lucide-react';
-import type { CategoriaConRuta } from '@/datos/categorias';
 import type { ProductoBuscado } from '@/datos/productos';
 import type { ValoresTransaccion } from './esquemaTransaccion';
 import { descuentoDeItem, totalDeItem } from './esquemaTransaccion';
 import { formatearCLP, parsearMonto, porcentajeDescuento, precioConDescuento } from '@/lib/dinero';
 import ComboboxProducto from './ComboboxProducto';
+import SelectorCategoria from './SelectorCategoria';
 import Estrellas from './Estrellas';
 
 /**
@@ -25,7 +25,6 @@ interface Props {
   register: UseFormRegister<ValoresTransaccion>;
   setValue: UseFormSetValue<ValoresTransaccion>;
   indice: number;
-  categorias: CategoriaConRuta[];
   puedeQuitar: boolean;
   onQuitar: () => void;
 }
@@ -35,7 +34,6 @@ export default function FilaItem({
   register,
   setValue,
   indice,
-  categorias,
   puedeQuitar,
   onQuitar,
 }: Props) {
@@ -109,18 +107,15 @@ export default function FilaItem({
           />
         </div>
 
-        <div>
-          <label className="sr-only" htmlFor={id('categoria')}>
-            Categoría del ítem {indice + 1}
-          </label>
-          <select id={id('categoria')} className="input" {...register(`items.${indice}.categoria_id`)}>
-            <option value="">Sin categoría</option>
-            {categorias.map((categoria) => (
-              <option key={categoria.id} value={categoria.id}>
-                {categoria.ruta}
-              </option>
-            ))}
-          </select>
+        <div className="sm:col-span-2">
+          <SelectorCategoria
+            valor={item?.categoria_id ?? ''}
+            onCambiar={(id) =>
+              setValue(`items.${indice}.categoria_id`, id, { shouldDirty: true })
+            }
+            etiquetaCategoria={`Categoría del ítem ${indice + 1}`}
+            etiquetaSubcategoria={`Subcategoría del ítem ${indice + 1}`}
+          />
         </div>
 
         {/*

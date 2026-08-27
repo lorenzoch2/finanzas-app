@@ -402,6 +402,46 @@ export interface Database {
         Args: { t: string };
         Returns: string;
       };
+
+      // --- Análisis (migración 0016) ---
+      gasto_por_categoria: {
+        Args: { p_mes: string; p_tz?: string };
+        Returns: { categoria_padre: string; categoria: string; total: number; items: number }[];
+      };
+      evolucion_mensual: {
+        Args: { p_meses?: number; p_tz?: string };
+        Returns: { mes: string; ingresos: number; gastos: number; limite: number }[];
+      };
+      gasto_por_establecimiento: {
+        Args: { p_mes: string; p_tz?: string };
+        Returns: { establecimiento: string; tipo: string; total: number; visitas: number }[];
+      };
+      historial_producto: {
+        Args: { p_producto_id: string };
+        Returns: {
+          fecha: string;
+          establecimiento: string;
+          precio_unitario: number | null;
+          precio_final: number;
+          cantidad: number;
+          precio_por_medida: number | null;
+          unidad_medida: string | null;
+        }[];
+      };
+      ranking_productos: {
+        Args: { p_mes: string; p_tz?: string; p_limite?: number };
+        Returns: {
+          producto: string;
+          marca: string | null;
+          total: number;
+          veces: number;
+          calificacion: number | null;
+        }[];
+      };
+      ahorro_descuentos: {
+        Args: { p_mes: string; p_tz?: string };
+        Returns: { establecimiento: string; ahorrado: number; items: number }[];
+      };
     };
 
     Enums: Record<string, never>;

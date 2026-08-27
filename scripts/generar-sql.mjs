@@ -6,7 +6,7 @@
  * Encadena tres cosas para que no se puedan desincronizar:
  *
  *   1. Genera 0011 y 0012 desde scripts/taxonomia.mjs.
- *   2. Junta 0010-0015 en un solo archivo.
+ *   2. Junta las migraciones pendientes en un solo archivo.
  *   3. Lo convierte a ASCII puro.
  *
  * El paso 3 no es cosmético. Al copiar SQL al portapapeles desde Windows
@@ -24,20 +24,19 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { basename } from 'node:path';
 import { aAscii } from './sql-ascii.mjs';
 
-const MIGRACIONES = [
-  // La limpieza de triggers va PRIMERO: la base traia un trigger obsoleto
-  // que reventaba cualquier UPDATE sobre items_detalle, y la recategorizacion
-  // es justamente un UPDATE masivo sobre esa tabla.
-  'supabase/migrations/0010_limpiar_triggers.sql',
-  'supabase/migrations/0011_categorias_v3.sql',
-  'supabase/migrations/0012_productos.sql',
-  'supabase/migrations/0013_establecimientos.sql',
-  'supabase/migrations/0014_transferencias.sql',
-  'supabase/migrations/0015_presupuestos.sql',
-];
+/**
+ * Las migraciones que TODAVIA no se han aplicado.
+ *
+ * Se mantiene a mano y a proposito: es la unica forma de generar un archivo
+ * que se pueda pegar entero sin volver a ejecutar lo ya aplicado. Cuando una
+ * migracion entra en produccion, se saca de aqui.
+ *
+ * Aplicadas: 0001-0015.
+ */
+const MIGRACIONES = ['supabase/migrations/0016_analisis.sql'];
 
 const CABECERA = `-- =====================================================================
--- FINANZAPP v3 - MIGRACIONES PENDIENTES (0010 a 0015)
+-- FINANZAPP v3 - MIGRACION PENDIENTE (0016)
 --
 -- EJECUTALO ENTERO, DE UNA SOLA VEZ.
 -- No selecciones un trozo: los bloques "do $$ ... $$" son indivisibles y
@@ -56,14 +55,11 @@ const CABECERA = `-- ===========================================================
 --
 -- Es seguro volver a ejecutarlo si algo falla a medias.
 --
---   0010  Retira un trigger obsoleto que traia la base y que rompia
---         cualquier escritura sobre items_detalle.
---   0011  Taxonomia nueva: 10 categorias y 41 subcategorias. Remapea los 93
---         items uno por uno. De 29% sin categoria a 0%.
---   0012  Catalogo de 75 productos y unidades estructuradas.
---   0013  Establecimientos, para comparar donde compras.
---   0014  Transferencias entre cuentas propias y cuenta principal.
---   0015  Limite de gasto mensual, con avance y proyeccion.
+--   0016  Agregaciones para la vista de analisis: gasto por categoria y por
+--         establecimiento, evolucion mensual, historial de precios de un
+--         producto, ranking y ahorro por descuentos.
+--
+-- Solo crea funciones de lectura: no toca ni una fila de datos.
 --
 -- Cada bloque va entre BEGIN/COMMIT: si uno falla se revierte entero.
 -- =====================================================================

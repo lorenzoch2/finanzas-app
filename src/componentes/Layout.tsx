@@ -1,6 +1,14 @@
 import type { ReactNode } from 'react';
 import { Link, useRouterState } from '@tanstack/react-router';
-import { LayoutDashboard, LogOut, Receipt, Settings2, Tags, WalletCards } from 'lucide-react';
+import {
+  ChartColumn,
+  LayoutDashboard,
+  LogOut,
+  Receipt,
+  Settings2,
+  Tags,
+  WalletCards,
+} from 'lucide-react';
 import { useSesion } from '@/auth/SesionProvider';
 import SelectorMes from './SelectorMes';
 import BannerOffline from './BannerOffline';
@@ -16,6 +24,7 @@ import BannerOffline from './BannerOffline';
 const VISTAS = [
   { to: '/', label: 'Resumen', icon: LayoutDashboard },
   { to: '/movimientos', label: 'Movimientos', icon: Receipt },
+  { to: '/analisis', label: 'Análisis', icon: ChartColumn },
   { to: '/saldos', label: 'Saldos', icon: WalletCards },
   { to: '/categorias', label: 'Categorías', icon: Tags },
 ] as const;

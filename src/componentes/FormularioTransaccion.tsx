@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CloudOff, Loader2, Plus, Store } from 'lucide-react';
-import { useCategorias } from '@/datos/categorias';
 import { useEstablecimientos } from '@/datos/establecimientos';
 import { useCrearProducto } from '@/datos/productos';
 import { useFuentes } from '@/datos/saldos';
@@ -43,7 +42,6 @@ export default function FormularioTransaccion({ transaccion, onGuardado, onCance
   const { zona } = useEstadoApp();
   const { data: fuentes = [] } = useFuentes();
   const { data: establecimientos = [] } = useEstablecimientos();
-  const { opciones: categorias } = useCategorias();
   const guardar = useGuardarTransaccion();
   const crearProducto = useCrearProducto();
 
@@ -350,7 +348,6 @@ export default function FormularioTransaccion({ transaccion, onGuardado, onCance
               register={register}
               setValue={setValue}
               indice={indice}
-              categorias={categorias}
               puedeQuitar={fields.length > 1}
               onQuitar={() => remove(indice)}
             />

@@ -6,6 +6,7 @@ import {
   Loader2,
   Pencil,
   Plus,
+  Repeat,
   Trash2,
   TriangleAlert,
 } from 'lucide-react';
@@ -100,6 +101,7 @@ export default function Movimientos() {
         <ul className="divide-y divide-slate-100">
           {transacciones.map((transaccion) => {
             const esIngreso = transaccion.tipo === 'ingreso';
+            const esTransferencia = transaccion.tipo === 'transferencia';
             const items = transaccion.items_detalle ?? [];
             const abierta = expandida === transaccion.id;
 
@@ -108,10 +110,16 @@ export default function Movimientos() {
                 <div className="flex items-start gap-3">
                   <span
                     className={`mt-0.5 shrink-0 rounded-xl p-2 ${
-                      esIngreso ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
+                      esTransferencia
+                        ? 'bg-slate-100 text-slate-500'
+                        : esIngreso
+                          ? 'bg-emerald-50 text-emerald-600'
+                          : 'bg-rose-50 text-rose-600'
                     }`}
                   >
-                    {esIngreso ? (
+                    {esTransferencia ? (
+                      <Repeat size={16} aria-hidden />
+                    ) : esIngreso ? (
                       <ArrowUpRight size={16} aria-hidden />
                     ) : (
                       <ArrowDownLeft size={16} aria-hidden />
@@ -121,14 +129,23 @@ export default function Movimientos() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-baseline justify-between gap-3">
                       <p className="truncate font-semibold text-slate-900">
-                        {transaccion.nota || (esIngreso ? 'Ingreso' : 'Gasto')}
+                        {transaccion.nota ||
+                          (esTransferencia ? 'Traspaso' : esIngreso ? 'Ingreso' : 'Gasto')}
                       </p>
+                      {/*
+                        Un traspaso no lleva signo: no entra ni sale dinero del
+                        patrimonio, solo cambia de cuenta.
+                      */}
                       <strong
                         className={`shrink-0 tabular-nums ${
-                          esIngreso ? 'text-emerald-700' : 'text-slate-900'
+                          esTransferencia
+                            ? 'text-slate-500'
+                            : esIngreso
+                              ? 'text-emerald-700'
+                              : 'text-slate-900'
                         }`}
                       >
-                        {esIngreso ? '+' : '−'}
+                        {esTransferencia ? '' : esIngreso ? '+' : '−'}
                         {formatearCLP(transaccion.monto)}
                       </strong>
                     </div>
@@ -136,6 +153,7 @@ export default function Movimientos() {
                     <p className="mt-0.5 text-xs text-slate-500">
                       {formatearFechaHora(new Date(transaccion.fecha), zona)}
                       {transaccion.fuentes_cuentas ? ` · ${transaccion.fuentes_cuentas.nombre}` : ''}
+                      {transaccion.establecimientos ? ` · ${transaccion.establecimientos.nombre}` : ''}
                     </p>
 
                     <div className="mt-2 flex flex-wrap items-center gap-1">
@@ -161,17 +179,25 @@ export default function Movimientos() {
                         </span>
                       ) : null}
 
-                      <button
-                        type="button"
-                        className="button-ghost px-2 py-1 text-xs"
-                        onClick={() => {
-                          setEditando(transaccion);
-                          setFormularioAbierto(false);
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                      >
-                        <Pencil size={14} aria-hidden /> Editar
-                      </button>
+                      {/*
+                        Un traspaso no se edita con este formulario: convertiria
+                        el movimiento en un egreso y la cuenta de destino se
+                        quedaria con el dinero sumado y sin nadie que lo restara.
+                        Si hay que corregirlo, se borra y se vuelve a hacer.
+                      */}
+                      {esTransferencia ? null : (
+                        <button
+                          type="button"
+                          className="button-ghost px-2 py-1 text-xs"
+                          onClick={() => {
+                            setEditando(transaccion);
+                            setFormularioAbierto(false);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                        >
+                          <Pencil size={14} aria-hidden /> Editar
+                        </button>
+                      )}
 
                       <button
                         type="button"
