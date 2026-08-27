@@ -12,7 +12,8 @@
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "golden": "node scripts/capture-legacy-balances.mjs"
+    "golden": "node scripts/capture-legacy-balances.mjs",
+    "verificar-migracion": "node scripts/verificar-migracion.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
