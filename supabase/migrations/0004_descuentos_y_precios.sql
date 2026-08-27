@@ -24,14 +24,28 @@ begin;
 -- calza con lo verificado, esta migración se niega a correr.
 do $$
 declare
-  v_orig_distinto  int;
+  v_orig_distinto  int := 0;
   v_pct_sin_monto  int;
   v_monto_incoher  int;
+  v_tiene_original boolean;
 begin
-  select count(*) into v_orig_distinto
-    from public.items_detalle
-    where precio_original is distinct from precio_unitario;
+  -- La comprobación de precio_original solo aplica si la columna sigue ahí.
+  -- Sin esto, volver a correr la migración fallaba con "column does not
+  -- exist" en su propia guarda, justo cuando más falta hace poder reintentar.
+  select exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public'
+      and table_name   = 'items_detalle'
+      and column_name  = 'precio_original'
+  ) into v_tiene_original;
 
+  if v_tiene_original then
+    execute 'select count(*) from public.items_detalle where precio_original is distinct from precio_unitario'
+      into v_orig_distinto;
+  end if;
+
+  -- descuento_porcentaje pasa a ser generada; si ya lo es, esta comprobación
+  -- sigue siendo válida porque se deriva de descuento_monto.
   select count(*) into v_pct_sin_monto
     from public.items_detalle
     where coalesce(descuento_porcentaje, 0) > 0 and coalesce(descuento_monto, 0) = 0;
