@@ -1,66 +1,99 @@
 -- Estado actual de la base. Solo lectura.
 --
--- Ejecutalo ENTERO (sin seleccionar nada) y pasame las cinco tablas.
+-- UNA sola consulta a proposito: el editor de Supabase muestra unicamente el
+-- resultado del ultimo select, asi que un archivo con varios se ve a medias.
+-- Aqui todo sale en una tabla de tres columnas.
+--
+-- Ejecutalo entero, sin seleccionar nada, y pasa el resultado completo.
 
--- 1) TRIGGERS. Esto es lo que faltaba mirar: PostgREST expone tablas y
---    columnas, pero no triggers, asi que habia codigo ejecutandose en cada
---    escritura que no se veia desde fuera.
-select
-  c.relname                                   as tabla,
-  t.tgname                                    as trigger,
-  p.proname                                   as funcion,
-  case t.tgenabled when 'D' then 'desactivado' else 'activo' end as estado
-from pg_trigger t
-join pg_class c on c.oid = t.tgrelid
-join pg_namespace n on n.oid = c.relnamespace
-join pg_proc p on p.oid = t.tgfoid
-where n.nspname = 'public'
-  and not t.tgisinternal
-order by c.relname, t.tgname;
+with
 
--- 2) FUNCIONES definidas en public, para ver si alguna quedo huerfana.
-select
-  p.proname                as funcion,
-  pg_get_function_identity_arguments(p.oid) as argumentos
-from pg_proc p
-join pg_namespace n on n.oid = p.pronamespace
-where n.nspname = 'public'
-order by p.proname;
+-- Triggers: el punto ciego. PostgREST expone tablas y columnas, pero no
+-- triggers, asi que puede haber codigo corriendo en cada escritura sin que
+-- se vea desde fuera.
+triggers as (
+  select
+    '1. TRIGGERS'                                  as seccion,
+    c.relname || '.' || t.tgname                   as elemento,
+    'funcion: ' || p.proname ||
+      case t.tgenabled when 'D' then ' (desactivado)' else '' end as detalle
+  from pg_trigger t
+  join pg_class c     on c.oid = t.tgrelid
+  join pg_namespace n on n.oid = c.relnamespace
+  join pg_proc p      on p.oid = t.tgfoid
+  where n.nspname = 'public' and not t.tgisinternal
+),
 
--- 3) COLUMNAS reales de items_detalle, incluyendo cuales son generadas.
-select
-  column_name,
-  data_type,
-  is_generated,
-  is_nullable
-from information_schema.columns
-where table_schema = 'public' and table_name = 'items_detalle'
-order by ordinal_position;
+-- Funciones propias, para detectar restos huerfanos.
+funciones as (
+  select
+    '2. FUNCIONES'                                      as seccion,
+    p.proname                                           as elemento,
+    coalesce(nullif(pg_get_function_identity_arguments(p.oid), ''), 'sin argumentos') as detalle
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'public'
+    and p.prokind = 'f'
+),
 
--- 4) Categorias: en que punto quedo la migracion.
-select
-  case
-    when nombre like '%(antigua)' then 'ya apartada'
-    when parent_id is null        then 'principal'
-    else 'subcategoria'
-  end                                      as estado,
-  count(*)                                 as cuantas,
-  string_agg(nombre, ', ' order by nombre) as nombres
-from public.categorias
-group by 1
-order by 1;
+-- Columnas de items_detalle: cuales existen y cuales son generadas.
+columnas as (
+  select
+    '3. COLUMNAS items_detalle' as seccion,
+    column_name                 as elemento,
+    data_type ||
+      case when is_generated = 'ALWAYS' then ' (GENERADA)' else '' end as detalle
+  from information_schema.columns
+  where table_schema = 'public' and table_name = 'items_detalle'
+),
 
--- 5) Conteos y tablas de la v3.
-select 'items_detalle' as tabla, count(*) as filas,
-       count(*) filter (where categoria_id is null) as sin_categoria
-from public.items_detalle
-union all
-select 'transacciones', count(*), 0 from public.transacciones
-union all
-select 'fuentes_cuentas', count(*), 0 from public.fuentes_cuentas;
+-- Categorias: en que punto quedo la migracion.
+categorias as (
+  select
+    '4. CATEGORIAS' as seccion,
+    case
+      when nombre like '%(antigua)' then 'ya apartadas'
+      when parent_id is null        then 'principales'
+      else 'subcategorias'
+    end             as elemento,
+    count(*)::text || ': ' || string_agg(nombre, ', ' order by nombre) as detalle
+  from public.categorias
+  group by 2
+),
 
-select table_name, 'ya existe' as estado
-from information_schema.tables
-where table_schema = 'public'
-  and table_name in ('productos', 'establecimientos', 'presupuestos')
-order by table_name;
+-- Conteos.
+conteos as (
+  select '5. CONTEOS' as seccion, 'items_detalle' as elemento,
+         count(*)::text || ' filas, ' ||
+         count(*) filter (where categoria_id is null)::text || ' sin categoria' as detalle
+  from public.items_detalle
+  union all
+  select '5. CONTEOS', 'transacciones', count(*)::text || ' filas'
+  from public.transacciones
+  union all
+  select '5. CONTEOS', 'fuentes_cuentas', count(*)::text || ' filas'
+  from public.fuentes_cuentas
+  union all
+  select '5. CONTEOS', 'categorias', count(*)::text || ' filas'
+  from public.categorias
+),
+
+-- Tablas de la v3: cuales ya existen.
+tablas_v3 as (
+  select
+    '6. TABLAS v3' as seccion,
+    t.nombre       as elemento,
+    case
+      when to_regclass('public.' || t.nombre) is null then 'NO existe todavia'
+      else 'ya existe'
+    end            as detalle
+  from (values ('productos'), ('establecimientos'), ('presupuestos')) as t(nombre)
+)
+
+select seccion, elemento, detalle from triggers
+union all select seccion, elemento, detalle from funciones
+union all select seccion, elemento, detalle from columnas
+union all select seccion, elemento, detalle from categorias
+union all select seccion, elemento, detalle from conteos
+union all select seccion, elemento, detalle from tablas_v3
+order by seccion, elemento;
