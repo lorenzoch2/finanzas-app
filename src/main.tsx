@@ -51,7 +51,24 @@ function Puerta() {
 const contenedor = document.getElementById('root');
 if (!contenedor) throw new Error('No se encontró #root en index.html.');
 
-createRoot(contenedor).render(
+/**
+ * La raíz se reutiliza entre recargas en caliente.
+ *
+ * En producción este módulo se ejecuta una sola vez y daría igual, pero en
+ * desarrollo Vite lo vuelve a evaluar en cada cambio. Sin esta caché, cada
+ * recarga llamaba a `createRoot` otra vez sobre el mismo `#root`, y las dos
+ * raíces se peleaban por el mismo DOM hasta lanzar un `removeChild` que
+ * dejaba la pantalla en blanco.
+ */
+interface VentanaConRaiz extends Window {
+  __finanzappRoot?: ReturnType<typeof createRoot>;
+}
+
+const ventana = window as VentanaConRaiz;
+const raiz = ventana.__finanzappRoot ?? createRoot(contenedor);
+ventana.__finanzappRoot = raiz;
+
+raiz.render(
   <StrictMode>
     <LimiteDeError>
       <QueryClientProvider client={queryClient}>
