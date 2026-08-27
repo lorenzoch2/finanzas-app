@@ -8,21 +8,20 @@ import type { Json, TipoTransaccion, TransaccionConDetalle } from '@/lib/databas
 /**
  * Transacciones y su detalle.
  *
- * Diferencias con la versión anterior:
- *
- * - Se consulta por mes, no `limit(200)` sobre todo el historial. Antes, la
- *   lista de movimientos y el cálculo de saldos bajaban conjuntos distintos de
- *   las mismas filas.
- * - Crear, editar y borrar pasan por funciones de la base, así que son
- *   atómicas. Antes eran varios requests encadenados sin transacción.
+ * Crear, editar y borrar pasan por funciones de la base, así que son
+ * atómicas: antes eran varios requests encadenados sin transacción, y si
+ * fallaba el segundo quedaba una boleta sin detalle.
  */
 
 export interface ItemFormulario {
+  /** Del catálogo. Null solo si el producto todavía no se ha creado. */
+  producto_id: string | null;
   nombre_producto: string;
   marca: string;
   categoria_id: string;
   unidades: number;
-  peso_volumen: string;
+  /** Peso real de esta compra. Solo para productos vendidos a granel. */
+  cantidad_medida: number | null;
   precio_unitario: number | null;
   descuento_monto: number;
   calificacion: number | null;
@@ -33,9 +32,15 @@ export interface TransaccionFormulario {
   monto: number;
   fecha: string; // ISO UTC
   fuente_id: string | null;
+  /** Solo en transferencias: la cuenta que recibe. */
+  fuente_destino_id: string | null;
+  establecimiento_id: string | null;
   nota: string;
   monto_sin_detalle: number;
 }
+
+const SELECT_COMPLETO =
+  '*, items_detalle(*, productos(id, nombre, marca)), fuentes_cuentas!fk_transacciones_fuente(id, nombre, tipo), establecimientos(id, nombre, tipo)';
 
 export function useTransaccionesDelMes(mes: string, zona: string) {
   return useQuery({
@@ -46,7 +51,7 @@ export function useTransaccionesDelMes(mes: string, zona: string) {
 
       const { data, error } = await supabase
         .from('transacciones')
-        .select('*, items_detalle(*), fuentes_cuentas(id, nombre, tipo)')
+        .select(SELECT_COMPLETO)
         .gte('fecha', rango.inicio)
         .lt('fecha', rango.fin)
         .order('fecha', { ascending: false });
@@ -66,7 +71,7 @@ export function useTransaccion(id: string | null) {
 
       const { data, error } = await supabase
         .from('transacciones')
-        .select('*, items_detalle(*), fuentes_cuentas(id, nombre, tipo)')
+        .select(SELECT_COMPLETO)
         .eq('id', id)
         .maybeSingle();
 
@@ -81,6 +86,7 @@ const invalidarTodo = (qc: ReturnType<typeof useQueryClient>) => {
   void qc.invalidateQueries({ queryKey: ['transacciones'] });
   void qc.invalidateQueries({ queryKey: ['saldos'] });
   void qc.invalidateQueries({ queryKey: ['resumen'] });
+  void qc.invalidateQueries({ queryKey: ['presupuesto'] });
 };
 
 export interface ResultadoGuardado {
@@ -88,7 +94,6 @@ export interface ResultadoGuardado {
   encolada: boolean;
 }
 
-/** Envía una transacción al servidor. Lanza si falla, sea por red o rechazo. */
 const enviarTransaccion = async (
   transaccion: TransaccionFormulario,
   items: ItemFormulario[],
@@ -145,9 +150,9 @@ export function useGuardarTransaccion() {
  * Vacía la cola pendiente contra el servidor.
  *
  * Se detiene al primer fallo de red en vez de seguir intentando el resto: si
- * la conexión se cayó, los siguientes van a fallar igual, y reintentarlos solo
- * gasta batería. Un rechazo del servidor sí saca la operación de la cola,
- * porque reintentarla eternamente no la va a arreglar.
+ * la conexión se cayó, los siguientes van a fallar igual. Un rechazo del
+ * servidor sí saca la operación de la cola, porque reintentarla eternamente
+ * no la va a arreglar.
  */
 export function useSincronizarCola() {
   const qc = useQueryClient();
@@ -185,6 +190,52 @@ export function useBorrarTransaccion() {
     mutationFn: async (id: string) => {
       const { error } = await supabase.rpc('borrar_transaccion', { p_id: id });
       if (error) throw new Error(mensajeDeError(error));
+    },
+    onSuccess: () => invalidarTodo(qc),
+  });
+}
+
+/**
+ * Traspaso entre cuentas propias.
+ *
+ * Es UNA fila con origen y destino, no dos movimientos que puedan quedar
+ * descuadrados. No lleva detalle de ítems: mover dinero no es comprar nada.
+ */
+export function useTransferir() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      origenId,
+      destinoId,
+      monto,
+      fecha,
+      nota,
+    }: {
+      origenId: string;
+      destinoId: string;
+      monto: number;
+      fecha: string;
+      nota: string;
+    }) => {
+      if (!origenId || !destinoId) throw new Error('Elige la cuenta de origen y la de destino.');
+      if (origenId === destinoId) throw new Error('El origen y el destino no pueden ser la misma cuenta.');
+      if (monto <= 0) throw new Error('El monto debe ser mayor que cero.');
+
+      return enviarTransaccion(
+        {
+          tipo: 'transferencia',
+          monto,
+          fecha,
+          fuente_id: origenId,
+          fuente_destino_id: destinoId,
+          establecimiento_id: null,
+          nota,
+          monto_sin_detalle: 0,
+        },
+        [],
+        null,
+      );
     },
     onSuccess: () => invalidarTodo(qc),
   });

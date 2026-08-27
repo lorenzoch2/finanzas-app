@@ -50,4 +50,8 @@ export const claves = {
   ajustes: ['ajustes'] as const,
   categorias: ['categorias'] as const,
   cola: ['cola-pendiente'] as const,
+  productos: ['productos'] as const,
+  establecimientos: ['establecimientos'] as const,
+  presupuestos: ['presupuestos'] as const,
+  presupuesto: (mes: string) => ['presupuesto', mes] as const,
 } satisfies Record<string, readonly unknown[] | ((...args: never[]) => readonly unknown[])>;

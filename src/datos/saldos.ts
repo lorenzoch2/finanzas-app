@@ -82,6 +82,40 @@ export function useCrearFuente() {
   });
 }
 
+/**
+ * Marca una cuenta como principal.
+ *
+ * Se desmarcan las demás primero porque la base tiene un índice único parcial
+ * que solo admite una principal por usuario: intentar marcar la segunda sin
+ * soltar la primera fallaría. Esa restricción vive en la base y no en la
+ * interfaz a propósito, para que no dependa de que el cliente se acuerde.
+ */
+export function useMarcarPrincipal() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error: errorLimpiar } = await supabase
+        .from('fuentes_cuentas')
+        .update({ es_principal: false })
+        .eq('es_principal', true);
+
+      if (errorLimpiar) throw new Error(mensajeDeError(errorLimpiar));
+
+      const { error } = await supabase
+        .from('fuentes_cuentas')
+        .update({ es_principal: true })
+        .eq('id', id);
+
+      if (error) throw new Error(mensajeDeError(error));
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: claves.fuentes });
+      void qc.invalidateQueries({ queryKey: ['saldos'] });
+    },
+  });
+}
+
 export function useRenombrarFuente() {
   const qc = useQueryClient();
 

@@ -7,17 +7,20 @@ const transaccion = (monto: number): TransaccionFormulario => ({
   monto,
   fecha: '2026-08-15T18:00:00.000Z',
   fuente_id: null,
+  fuente_destino_id: null,
+  establecimiento_id: null,
   nota: 'compra',
   monto_sin_detalle: 0,
 });
 
 const items: ItemFormulario[] = [
   {
+    producto_id: null,
     nombre_producto: 'Arroz',
     marca: 'Tucapel',
     categoria_id: '',
     unidades: 2,
-    peso_volumen: '1 kg',
+    cantidad_medida: null,
     precio_unitario: 1990,
     descuento_monto: 0,
     calificacion: null,

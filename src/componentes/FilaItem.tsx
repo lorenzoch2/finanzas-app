@@ -1,21 +1,21 @@
 import { useWatch } from 'react-hook-form';
-import type { Control, UseFormRegister } from 'react-hook-form';
+import type { Control, UseFormRegister, UseFormSetValue } from 'react-hook-form';
 import { Trash2 } from 'lucide-react';
 import type { CategoriaConRuta } from '@/datos/categorias';
+import type { ProductoBuscado } from '@/datos/productos';
 import type { ValoresTransaccion } from './esquemaTransaccion';
 import { descuentoDeItem, totalDeItem } from './esquemaTransaccion';
 import { formatearCLP, parsearMonto, porcentajeDescuento, precioConDescuento } from '@/lib/dinero';
+import ComboboxProducto from './ComboboxProducto';
+import Estrellas from './Estrellas';
 
 /**
  * Una línea de la boleta.
  *
  * Es un componente aparte por rendimiento: se suscribe con `useWatch` solo a
  * SUS campos, así que escribir en el ítem 3 no redibuja los otros diecinueve.
- * Antes el formulario hacía `watch('items')` en el padre y cada tecla
- * re-renderizaba la lista entera, que en un teléfono con una boleta larga se
- * nota.
  *
- * Todos los campos llevan `<label>` real, aunque visualmente se apoyen en el
+ * Todos los campos llevan `<label>` real aunque visualmente se apoyen en el
  * placeholder: sin ellos un lector de pantalla no anuncia nada, y al escribir
  * se pierde de vista qué campo era.
  */
@@ -23,6 +23,7 @@ import { formatearCLP, parsearMonto, porcentajeDescuento, precioConDescuento } f
 interface Props {
   control: Control<ValoresTransaccion>;
   register: UseFormRegister<ValoresTransaccion>;
+  setValue: UseFormSetValue<ValoresTransaccion>;
   indice: number;
   categorias: CategoriaConRuta[];
   puedeQuitar: boolean;
@@ -32,6 +33,7 @@ interface Props {
 export default function FilaItem({
   control,
   register,
+  setValue,
   indice,
   categorias,
   puedeQuitar,
@@ -41,7 +43,32 @@ export default function FilaItem({
 
   const precio = parsearMonto(item?.precio_unitario ?? '') ?? 0;
   const descuento = item ? descuentoDeItem(item) : 0;
+  const esGranel = item?.vendido_por === 'peso';
   const id = (campo: string) => `item-${indice}-${campo}`;
+
+  /**
+   * Al elegir del catálogo se rellenan marca, categoría y forma de venta.
+   * Es lo que convierte repetir una compra habitual en un solo toque, en vez
+   * de volver a teclear los mismos cuatro campos.
+   */
+  const alElegirProducto = ({
+    nombre,
+    producto,
+  }: {
+    nombre: string;
+    producto: ProductoBuscado | null;
+  }) => {
+    setValue(`items.${indice}.nombre_producto`, nombre, { shouldDirty: true });
+    setValue(`items.${indice}.producto_id`, producto?.id ?? '', { shouldDirty: true });
+
+    if (producto) {
+      setValue(`items.${indice}.marca`, producto.marca ?? '', { shouldDirty: true });
+      setValue(`items.${indice}.vendido_por`, producto.vendido_por, { shouldDirty: true });
+      if (producto.categoria_id) {
+        setValue(`items.${indice}.categoria_id`, producto.categoria_id, { shouldDirty: true });
+      }
+    }
+  };
 
   return (
     <div className="rounded-3xl border border-slate-200 bg-white p-4">
@@ -61,14 +88,12 @@ export default function FilaItem({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="sm:col-span-2">
-          <label className="sr-only" htmlFor={id('producto')}>
-            Producto del ítem {indice + 1}
-          </label>
-          <input
+          <ComboboxProducto
             id={id('producto')}
-            className="input"
-            placeholder="Producto"
-            {...register(`items.${indice}.nombre_producto`)}
+            valor={item?.nombre_producto ?? ''}
+            productoId={item?.producto_id ?? ''}
+            onCambiar={alElegirProducto}
+            placeholder={`Producto del ítem ${indice + 1}`}
           />
         </div>
 
@@ -98,45 +123,53 @@ export default function FilaItem({
           </select>
         </div>
 
-        <div>
-          <label className="sr-only" htmlFor={id('unidades')}>
-            Unidades del ítem {indice + 1}
-          </label>
-          <input
-            id={id('unidades')}
-            className="input"
-            inputMode="numeric"
-            placeholder="Unidades"
-            {...register(`items.${indice}.unidades`)}
-          />
-        </div>
-
-        <div>
-          <label className="sr-only" htmlFor={id('peso')}>
-            Peso o volumen del ítem {indice + 1}
-          </label>
-          <input
-            id={id('peso')}
-            className="input"
-            placeholder="Peso / volumen"
-            {...register(`items.${indice}.peso_volumen`)}
-          />
-        </div>
+        {/*
+          A granel se pide el peso de ESTA compra, porque cambia cada vez; el
+          precio va por kilo. En un envase cerrado se piden unidades, porque el
+          contenido ya vive en el producto y no varía.
+        */}
+        {esGranel ? (
+          <div>
+            <label className="sr-only" htmlFor={id('peso')}>
+              Peso comprado del ítem {indice + 1}, en kilos
+            </label>
+            <input
+              id={id('peso')}
+              className="input"
+              inputMode="decimal"
+              placeholder="Peso en kg (0,674)"
+              {...register(`items.${indice}.cantidad_medida`)}
+            />
+          </div>
+        ) : (
+          <div>
+            <label className="sr-only" htmlFor={id('unidades')}>
+              Unidades del ítem {indice + 1}
+            </label>
+            <input
+              id={id('unidades')}
+              className="input"
+              inputMode="numeric"
+              placeholder="Unidades"
+              {...register(`items.${indice}.unidades`)}
+            />
+          </div>
+        )}
 
         <div>
           <label className="sr-only" htmlFor={id('precio')}>
-            Precio unitario del ítem {indice + 1}
+            {esGranel ? `Precio por kilo del ítem ${indice + 1}` : `Precio unitario del ítem ${indice + 1}`}
           </label>
           <input
             id={id('precio')}
             className="input"
             inputMode="decimal"
-            placeholder="Precio unitario"
+            placeholder={esGranel ? 'Precio por kg' : 'Precio unitario'}
             {...register(`items.${indice}.precio_unitario`)}
           />
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 sm:col-span-2">
           <div className="flex-1">
             <label className="sr-only" htmlFor={id('dcto-tipo')}>
               Tipo de descuento del ítem {indice + 1}
@@ -167,22 +200,34 @@ export default function FilaItem({
         </div>
       </div>
 
-      {precio > 0 ? (
-        <p className="mt-3 text-xs text-slate-500">
-          {descuento > 0 ? (
-            <>
-              {formatearCLP(precio)} − {formatearCLP(descuento)} (
-              {porcentajeDescuento(precio, descuento)}%) ={' '}
-              <strong className="text-slate-700">
-                {formatearCLP(precioConDescuento(precio, descuento))}
-              </strong>{' '}
-              c/u ·{' '}
-            </>
-          ) : null}
-          Total línea:{' '}
-          <strong className="text-slate-700">{formatearCLP(item ? totalDeItem(item) : 0)}</strong>
-        </p>
-      ) : null}
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+        <Estrellas
+          etiqueta={`Calificación del ítem ${indice + 1}`}
+          valor={item?.calificacion ? Number(item.calificacion) : null}
+          onCambiar={(v) =>
+            setValue(`items.${indice}.calificacion`, v == null ? '' : String(v), {
+              shouldDirty: true,
+            })
+          }
+        />
+
+        {precio > 0 ? (
+          <p className="text-xs text-slate-500">
+            {descuento > 0 ? (
+              <>
+                {formatearCLP(precio)} − {formatearCLP(descuento)} (
+                {porcentajeDescuento(precio, descuento)}%) ={' '}
+                <strong className="text-slate-700">
+                  {formatearCLP(precioConDescuento(precio, descuento))}
+                </strong>
+                {esGranel ? ' /kg' : ' c/u'} ·{' '}
+              </>
+            ) : null}
+            Total:{' '}
+            <strong className="text-slate-700">{formatearCLP(item ? totalDeItem(item) : 0)}</strong>
+          </p>
+        ) : null}
+      </div>
     </div>
   );
 }

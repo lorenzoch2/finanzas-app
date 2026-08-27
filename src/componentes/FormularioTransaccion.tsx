@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CloudOff, Loader2, Plus } from 'lucide-react';
+import { CloudOff, Loader2, Plus, Store } from 'lucide-react';
 import { useCategorias } from '@/datos/categorias';
+import { useEstablecimientos } from '@/datos/establecimientos';
+import { useCrearProducto } from '@/datos/productos';
 import { useFuentes } from '@/datos/saldos';
 import { useGuardarTransaccion } from '@/datos/transacciones';
 import type { ItemFormulario } from '@/datos/transacciones';
@@ -24,11 +26,11 @@ import type { ValoresTransaccion } from './esquemaTransaccion';
 /**
  * Captura de una transacción, con detalle opcional de la boleta.
  *
- * El formulario en sí es "no controlado": el padre solo se suscribe a `tipo` y
- * `detallado`, que cambian cuando tocas un botón, no cuando escribes. Las
- * partes que sí necesitan reaccionar a cada tecla —cada fila y el cuadre de
- * totales— viven en componentes hijos con `useWatch`. Sin esa separación, una
- * boleta de veinte ítems redibujaba las veinte filas por cada carácter.
+ * El formulario es «no controlado»: el padre solo se suscribe a `tipo` y
+ * `detallado`, que cambian al pulsar un botón, no al escribir. Las partes que
+ * sí reaccionan a cada tecla —cada fila y el cuadre de totales— viven en
+ * componentes hijos con `useWatch`. Sin esa separación, una boleta de veinte
+ * ítems redibujaba las veinte filas por cada carácter.
  */
 
 interface Props {
@@ -40,8 +42,10 @@ interface Props {
 export default function FormularioTransaccion({ transaccion, onGuardado, onCancelar }: Props) {
   const { zona } = useEstadoApp();
   const { data: fuentes = [] } = useFuentes();
+  const { data: establecimientos = [] } = useEstablecimientos();
   const { opciones: categorias } = useCategorias();
   const guardar = useGuardarTransaccion();
+  const crearProducto = useCrearProducto();
 
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -50,10 +54,15 @@ export default function FormularioTransaccion({ transaccion, onGuardado, onCance
 
   const valoresIniciales = useMemo<ValoresTransaccion>(() => {
     if (!transaccion) {
+      // La cuenta principal viene preseleccionada: es de donde sale la mayoría
+      // de los gastos, y ahorra un toque en la pantalla que más se usa.
+      const principal = fuentes.find((f) => f.es_principal);
+
       return {
         tipo: 'egreso',
         monto: '',
-        fuente_id: '',
+        fuente_id: principal?.id ?? '',
+        establecimiento_id: '',
         fecha: paraInputDateTime(new Date(), zona),
         nota: '',
         detallado: false,
@@ -64,19 +73,22 @@ export default function FormularioTransaccion({ transaccion, onGuardado, onCance
     const items = transaccion.items_detalle ?? [];
 
     return {
-      tipo: transaccion.tipo,
+      tipo: transaccion.tipo === 'ingreso' ? 'ingreso' : 'egreso',
       monto: String(transaccion.monto ?? ''),
       fuente_id: transaccion.fuente_id ?? '',
+      establecimiento_id: transaccion.establecimiento_id ?? '',
       fecha: paraInputDateTime(new Date(transaccion.fecha), zona),
       nota: transaccion.nota ?? '',
       detallado: items.length > 0,
       items: items.length
         ? items.map((item) => ({
-            nombre_producto: item.nombre_producto ?? '',
-            marca: item.marca ?? '',
+            producto_id: item.producto_id ?? '',
+            nombre_producto: item.productos?.nombre ?? item.nombre_producto ?? '',
+            marca: item.productos?.marca ?? item.marca ?? '',
             categoria_id: item.categoria_id ?? '',
             unidades: String(item.unidades ?? 1),
-            peso_volumen: item.peso_volumen ?? '',
+            cantidad_medida: item.cantidad_medida != null ? String(item.cantidad_medida) : '',
+            vendido_por: item.cantidad_medida != null ? ('peso' as const) : ('unidad' as const),
             precio_unitario: String(item.precio_unitario ?? ''),
             descuento_tipo: item.descuento_monto > 0 ? ('monto' as const) : ('ninguno' as const),
             descuento_valor: item.descuento_monto > 0 ? String(item.descuento_monto) : '',
@@ -84,7 +96,7 @@ export default function FormularioTransaccion({ transaccion, onGuardado, onCance
           }))
         : [itemVacio()],
     };
-  }, [transaccion, zona]);
+  }, [transaccion, zona, fuentes]);
 
   const form = useForm<ValoresTransaccion>({
     resolver: zodResolver(esquemaTransaccion),
@@ -106,7 +118,7 @@ export default function FormularioTransaccion({ transaccion, onGuardado, onCance
   const activo = puedeDetallar && detallado;
 
   // Al encender el detalle con un total ya escrito, se propone ese total como
-  // precio del primer ítem: es el caso de "una sola compra grande".
+  // precio del primer ítem: es el caso de «una sola compra grande».
   // Se lee con getValues para no suscribir el formulario al campo `monto`.
   useEffect(() => {
     if (!activo) return;
@@ -151,20 +163,41 @@ export default function FormularioTransaccion({ transaccion, onGuardado, onCance
       return;
     }
 
-    const itemsPayload: ItemFormulario[] = detalleActivo
-      ? conContenido.map((item) => ({
-          nombre_producto: item.nombre_producto,
-          marca: item.marca,
-          categoria_id: item.categoria_id,
-          unidades: parsearMonto(item.unidades) ?? 1,
-          peso_volumen: item.peso_volumen,
-          precio_unitario: parsearMonto(item.precio_unitario),
-          descuento_monto: descuentoDeItem(item),
-          calificacion: parsearMonto(item.calificacion),
-        }))
-      : [];
-
     try {
+      const itemsPayload: ItemFormulario[] = [];
+
+      if (detalleActivo) {
+        for (const item of conContenido) {
+          // Un producto escrito a mano se añade al catálogo al guardar. Si ya
+          // existía, la base lo resuelve por su unicidad y se reutiliza, con
+          // lo que no se puede crear un duplicado ni queriendo.
+          let productoId = item.producto_id || null;
+
+          if (!productoId && item.nombre_producto.trim()) {
+            const creado = await crearProducto.mutateAsync({
+              nombre: item.nombre_producto,
+              marca: item.marca || null,
+              categoria_id: item.categoria_id || null,
+              vendido_por: item.vendido_por,
+            });
+            productoId = creado.id;
+          }
+
+          itemsPayload.push({
+            producto_id: productoId,
+            nombre_producto: item.nombre_producto,
+            marca: item.marca,
+            categoria_id: item.categoria_id,
+            unidades: parsearMonto(item.unidades) ?? 1,
+            cantidad_medida:
+              item.vendido_por === 'peso' ? (parsearMonto(item.cantidad_medida) ?? null) : null,
+            precio_unitario: parsearMonto(item.precio_unitario),
+            descuento_monto: descuentoDeItem(item),
+            calificacion: parsearMonto(item.calificacion),
+          });
+        }
+      }
+
       const resultado = await guardar.mutateAsync({
         id: transaccion?.id ?? null,
         transaccion: {
@@ -172,6 +205,8 @@ export default function FormularioTransaccion({ transaccion, onGuardado, onCance
           monto: montoFinal,
           fecha: fechaIso,
           fuente_id: valores.fuente_id || null,
+          fuente_destino_id: null,
+          establecimiento_id: valores.establecimiento_id || null,
           nota: valores.nota,
           monto_sin_detalle: detalleActivo ? Math.max(montoFinal - sumaDetalle, 0) : 0,
         },
@@ -193,6 +228,8 @@ export default function FormularioTransaccion({ transaccion, onGuardado, onCance
     }
   });
 
+  const guardando = guardar.isPending || crearProducto.isPending;
+
   return (
     <form onSubmit={(e) => void enviar(e)} className="card space-y-5 p-5 sm:p-6">
       <div className="flex items-center justify-between gap-3">
@@ -206,8 +243,6 @@ export default function FormularioTransaccion({ transaccion, onGuardado, onCance
         ) : null}
       </div>
 
-      {/* Dos botones grandes en vez de un select: es la primera decisión y la
-          más frecuente. */}
       <fieldset>
         <legend className="sr-only">Tipo de transacción</legend>
         <div className="grid grid-cols-2 gap-2">
@@ -248,17 +283,35 @@ export default function FormularioTransaccion({ transaccion, onGuardado, onCance
 
         <div className="space-y-1.5">
           <label className="label" htmlFor="fuente">
-            Fuente
+            Cuenta
           </label>
           <select id="fuente" className="input" {...register('fuente_id')}>
-            <option value="">Sin fuente</option>
+            <option value="">Sin cuenta</option>
             {fuentes.map((fuente) => (
               <option key={fuente.id} value={fuente.id}>
                 {fuente.nombre}
+                {fuente.es_principal ? ' (principal)' : ''}
               </option>
             ))}
           </select>
         </div>
+
+        {puedeDetallar ? (
+          <div className="space-y-1.5">
+            <label className="label" htmlFor="establecimiento">
+              <Store size={14} className="mr-1 inline text-slate-400" aria-hidden />
+              Dónde
+            </label>
+            <select id="establecimiento" className="input" {...register('establecimiento_id')}>
+              <option value="">Sin especificar</option>
+              {establecimientos.map((local) => (
+                <option key={local.id} value={local.id}>
+                  {local.nombre}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
 
         <div className="space-y-1.5">
           <label className="label" htmlFor="fecha">
@@ -273,7 +326,7 @@ export default function FormularioTransaccion({ transaccion, onGuardado, onCance
           />
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 sm:col-span-2">
           <label className="label" htmlFor="nota">
             Nota
           </label>
@@ -295,6 +348,7 @@ export default function FormularioTransaccion({ transaccion, onGuardado, onCance
               key={field.id}
               control={control}
               register={register}
+              setValue={setValue}
               indice={indice}
               categorias={categorias}
               puedeQuitar={fields.length > 1}
@@ -321,8 +375,8 @@ export default function FormularioTransaccion({ transaccion, onGuardado, onCance
         </p>
       ) : null}
 
-      <button type="submit" className="button-primary w-full" disabled={guardar.isPending}>
-        {guardar.isPending ? <Loader2 size={16} className="animate-spin" aria-hidden /> : null}
+      <button type="submit" className="button-primary w-full" disabled={guardando}>
+        {guardando ? <Loader2 size={16} className="animate-spin" aria-hidden /> : null}
         {editando ? 'Guardar cambios' : 'Registrar'}
       </button>
     </form>
