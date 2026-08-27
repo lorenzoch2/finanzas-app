@@ -33,6 +33,7 @@ credenciales vacías, así que el error real aparecía mucho después disfrazado
 | `npm run typecheck` | TypeScript en modo estricto, sin emitir. |
 | `npm run test` | Suite de Vitest. |
 | `npm run golden -- <dir>` | Recalcula los saldos con la lógica legacy desde un backup. |
+| `npm run iconos` | Regenera el juego de iconos de la PWA desde `public/icon.png`. |
 
 ## Base de datos
 
@@ -54,6 +55,11 @@ login de la app y recién entonces aplica las migraciones.
 | `0007_guardar_transaccion` | Guardado y borrado atómicos. |
 | `0008_cerrar_huecos` | Elimina `uso_productos`, que quedó sin RLS, y revoca `EXECUTE` de `PUBLIC`. |
 | `0009_resumen_sin_duplicar` | `resumen_mensual` deja de recalcular los saldos; el total lo suma el cliente. |
+| `0010_categorias_v3` | Taxonomía nueva de 10 categorías y 41 subcategorías, con los 93 ítems remapeados. |
+| `0011_productos` | Catálogo de productos y unidades estructuradas; retira `peso_volumen`. |
+| `0012_establecimientos` | Dónde se compró, para comparar locales. |
+| `0013_transferencias` | Traspasos entre cuentas propias y cuenta principal. |
+| `0014_presupuestos` | Límite de gasto mensual, con avance y proyección. |
 
 Antes y después están `supabase/checks/pre-migration.sql` y `post-migration.sql`, que son solo
 lectura y sirven para comparar conteos.
@@ -61,8 +67,11 @@ lectura y sirven para comparar conteos.
 ### Antes de migrar: respalda
 
 ```bash
-node scripts/capture-legacy-balances.mjs backups/<stamp>
+node scripts/backup.mjs
 ```
+
+Necesita `FINANZAPP_EMAIL` y `FINANZAPP_PASSWORD` en el entorno: desde que RLS está activo, la anon
+key sola no lee nada.
 
 `backups/` está fuera de git porque contiene montos reales. El *golden* que genera ese script es la
 red de seguridad: los saldos que calcule la versión nueva deben coincidir dígito a dígito con los que
