@@ -61,6 +61,17 @@ body {
   }
 }
 
+/**
+ * En Tailwind v4, `@apply` solo acepta utilidades reales: no se puede aplicar
+ * una clase de componente definida por uno mismo. Como las variantes de botón
+ * comparten una base, esa base se declara con `@utility`, que sí es aplicable.
+ */
+@utility button-base {
+  @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold
+         transition select-none
+         disabled:cursor-not-allowed disabled:opacity-50;
+}
+
 @layer components {
   .card {
     @apply rounded-3xl border border-slate-200/80 bg-white/90 shadow-soft backdrop-blur;
@@ -83,25 +94,23 @@ body {
   }
 
   .button {
-    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold
-           transition select-none
-           disabled:cursor-not-allowed disabled:opacity-50;
+    @apply button-base;
   }
 
   .button-primary {
-    @apply button bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800;
+    @apply button-base bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800;
   }
 
   .button-secondary {
-    @apply button border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-100;
+    @apply button-base border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-100;
   }
 
   .button-ghost {
-    @apply button text-slate-600 hover:bg-slate-100 hover:text-slate-900;
+    @apply button-base text-slate-600 hover:bg-slate-100 hover:text-slate-900;
   }
 
   .button-danger {
-    @apply button bg-rose-600 text-white hover:bg-rose-700 active:bg-rose-800;
+    @apply button-base bg-rose-600 text-white hover:bg-rose-700 active:bg-rose-800;
   }
 
   .chip {

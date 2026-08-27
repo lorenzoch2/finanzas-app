@@ -8,3 +8,4 @@ release/
 dist/
 .vite/
 coverage/
+.claude/

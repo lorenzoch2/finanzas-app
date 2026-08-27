@@ -41,6 +41,7 @@ export interface Database {
           tipo?: string;
           user_id?: string;
         };
+        Relationships: [];
       };
 
       transacciones: {
@@ -73,6 +74,15 @@ export interface Database {
           nota?: string | null;
           monto_sin_detalle?: number;
         };
+        Relationships: [
+          {
+            foreignKeyName: 'fk_transacciones_fuente';
+            columns: ['fuente_id'];
+            isOneToOne: false;
+            referencedRelation: 'fuentes_cuentas';
+            referencedColumns: ['id'];
+          },
+        ];
       };
 
       items_detalle: {
@@ -117,6 +127,22 @@ export interface Database {
           descuento_monto?: number;
           calificacion?: number | null;
         };
+        Relationships: [
+          {
+            foreignKeyName: 'fk_items_transaccion';
+            columns: ['transaccion_id'];
+            isOneToOne: false;
+            referencedRelation: 'transacciones';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'fk_items_categoria';
+            columns: ['categoria_id'];
+            isOneToOne: false;
+            referencedRelation: 'categorias';
+            referencedColumns: ['id'];
+          },
+        ];
       };
 
       ajustes_saldos: {
@@ -142,6 +168,15 @@ export interface Database {
           monto_ajustado?: number;
           nota?: string | null;
         };
+        Relationships: [
+          {
+            foreignKeyName: 'fk_ajustes_fuente';
+            columns: ['fuente_id'];
+            isOneToOne: false;
+            referencedRelation: 'fuentes_cuentas';
+            referencedColumns: ['id'];
+          },
+        ];
       };
 
       categorias: {
@@ -161,6 +196,15 @@ export interface Database {
           nombre?: string;
           parent_id?: string | null;
         };
+        Relationships: [
+          {
+            foreignKeyName: 'fk_categorias_parent';
+            columns: ['parent_id'];
+            isOneToOne: false;
+            referencedRelation: 'categorias';
+            referencedColumns: ['id'];
+          },
+        ];
       };
     };
 
