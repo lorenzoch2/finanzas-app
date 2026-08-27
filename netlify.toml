@@ -1,0 +1,57 @@
+# Despliegue en Netlify.
+#
+# Las variables VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY se configuran en
+# la interfaz de Netlify (Site settings → Environment variables), no aquí:
+# este archivo va al repositorio.
+#
+# La anon key acaba igualmente dentro del bundle publicado, y eso es correcto
+# por diseño: está pensada para ser pública. Lo que protege los datos es RLS,
+# activo desde la migración 0002. Verificado: sin sesión, las cinco tablas
+# devuelven 401.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "24"
+
+# La app es una SPA con enrutado por historial: recargar en /movimientos pide
+# al servidor una ruta que no existe como archivo. Sin esta regla, cualquier
+# recarga fuera de la raíz devolvería 404 — y en una PWA instalada, que abre
+# donde la dejaste, eso sería constante.
+#
+# Netlify solo aplica la redirección cuando la ruta no coincide con un archivo
+# real, así que el service worker, el manifest y los iconos se sirven normal.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# El service worker NUNCA debe cachearse: es el archivo que anuncia que hay
+# versión nueva. Si el navegador sirviera una copia vieja desde su caché, la
+# app quedaría congelada en esa versión y no habría forma de actualizarla.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+    Content-Type = "application/manifest+json"
+
+# Los assets con hash en el nombre sí pueden cachearse para siempre: si el
+# contenido cambia, cambia el nombre.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"

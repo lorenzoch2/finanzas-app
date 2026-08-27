@@ -13,8 +13,14 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
+      // 'prompt', no 'autoUpdate': una recarga automática a mitad de una
+      // boleta de veinte ítems te haría perder lo escrito. Con prompt, la
+      // versión nueva espera y AvisoActualizacion te deja elegir cuándo.
+      // Antes esto estaba en 'prompt' SIN interfaz que avisara, con lo que la
+      // actualización se quedaba esperando para siempre y el teléfono seguía
+      // mostrando la versión vieja.
       registerType: 'prompt',
-      includeAssets: ['icon.png'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon-180x180.png'],
       manifest: {
         name: 'Finanzapp',
         short_name: 'Finanzapp',
@@ -25,8 +31,15 @@ export default defineConfig({
         background_color: '#f8fbff',
         theme_color: '#1669ef',
         icons: [
-          { src: 'icon.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-          { src: 'icon.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: 'pwa-64x64.png', sizes: '64x64', type: 'image/png' },
+          { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+          {
+            src: 'maskable-icon-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
         ],
       },
       workbox: {

@@ -10,6 +10,7 @@ import { router } from '@/router';
 import Login from '@/rutas/Login';
 import CambiarPassword from '@/rutas/CambiarPassword';
 import LimiteDeError from '@/componentes/LimiteDeError';
+import AvisoActualizacion from '@/componentes/AvisoActualizacion';
 import './index.css';
 
 /**
@@ -44,6 +45,7 @@ function Puerta() {
   return (
     <EstadoAppProvider>
       <RouterProvider router={router} />
+      <AvisoActualizacion />
     </EstadoAppProvider>
   );
 }

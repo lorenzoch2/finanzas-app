@@ -68,6 +68,43 @@ node scripts/capture-legacy-balances.mjs backups/<stamp>
 red de seguridad: los saldos que calcule la versión nueva deben coincidir dígito a dígito con los que
 calculaba la anterior.
 
+## Despliegue
+
+Se despliega en Netlify desde el repositorio: cada push a la rama conectada publica una versión nueva.
+La configuración está en `netlify.toml` y no hay que tocarla.
+
+Lo único que se configura a mano, una vez, es en *Site settings → Environment variables*:
+
+```
+VITE_SUPABASE_URL
+VITE_SUPABASE_ANON_KEY
+```
+
+No van en el repositorio. Sí acaban dentro del bundle publicado, y eso es correcto: la anon key está
+pensada para ser pública. Lo que protege los datos es RLS. Comprobado: sin sesión iniciada, las
+cinco tablas devuelven 401.
+
+### Cómo se actualiza una vez instalada
+
+El service worker está en modo `prompt`: cuando detecta una versión nueva la descarga pero **no** la
+activa sola, y `AvisoActualizacion` muestra un aviso con un botón. Se prefiere preguntar a recargar
+por sorpresa, porque una recarga a mitad de una boleta de veinte ítems se llevaría lo escrito.
+
+Mientras la app está abierta comprueba si hay versión nueva cada hora; una PWA instalada puede pasar
+días sin cerrarse del todo, y sin esa comprobación solo miraría al arrancar.
+
+`netlify.toml` marca `sw.js` y el manifest como no cacheables. Es imprescindible: si el navegador
+sirviera una copia vieja del service worker, la app quedaría congelada en esa versión sin forma de
+actualizarse.
+
+### Iconos
+
+```bash
+npm run iconos
+```
+
+Regenera el juego completo desde `public/icon.png`. Solo hace falta si cambias el icono original.
+
 ## Modelo de datos
 
 - **`fuentes_cuentas`** — dónde está el dinero (cuenta, efectivo, crédito).
