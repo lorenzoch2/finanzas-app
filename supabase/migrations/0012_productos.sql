@@ -1,4 +1,4 @@
--- 0011 — Catálogo de productos y unidades estructuradas
+-- 0012 — Catálogo de productos y unidades estructuradas
 --
 -- GENERADO por scripts/generar-migracion-productos.mjs. No editar a mano.
 --

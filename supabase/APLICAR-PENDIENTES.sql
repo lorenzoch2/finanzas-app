@@ -1,5 +1,5 @@
 -- =====================================================================
--- FINANZAPP v3 - MIGRACIONES PENDIENTES (0010 a 0014)
+-- FINANZAPP v3 - MIGRACIONES PENDIENTES (0010 a 0015)
 --
 -- EJECUTALO ENTERO, DE UNA SOLA VEZ.
 -- No selecciones un trozo: los bloques "do $$ ... $$" son indivisibles y
@@ -18,20 +18,119 @@
 --
 -- Es seguro volver a ejecutarlo si algo falla a medias.
 --
---   0010  Taxonomia nueva: 10 categorias y 41 subcategorias. Remapea los 93
+--   0010  Retira un trigger obsoleto que traia la base y que rompia
+--         cualquier escritura sobre items_detalle.
+--   0011  Taxonomia nueva: 10 categorias y 41 subcategorias. Remapea los 93
 --         items uno por uno. De 29% sin categoria a 0%.
---   0011  Catalogo de 75 productos y unidades estructuradas.
---   0012  Establecimientos, para comparar donde compras.
---   0013  Transferencias entre cuentas propias y cuenta principal.
---   0014  Limite de gasto mensual, con avance y proyeccion.
+--   0012  Catalogo de 75 productos y unidades estructuradas.
+--   0013  Establecimientos, para comparar donde compras.
+--   0014  Transferencias entre cuentas propias y cuenta principal.
+--   0015  Limite de gasto mensual, con avance y proyeccion.
 --
 -- Cada bloque va entre BEGIN/COMMIT: si uno falla se revierte entero.
 -- =====================================================================
 
 -- ============================================================
--- 0010_categorias_v3.sql
+-- 0010_limpiar_triggers.sql
 -- ============================================================
--- 0010 - Taxonomia de categorias v3
+-- 0010 - Retirar triggers obsoletos de items_detalle
+--
+-- El fallo que lo destapo, al intentar recategorizar los items:
+--
+--   ERROR: record "new" has no field "precio_original"
+--   CONTEXT: PL/pgSQL assignment
+--            "NEW.precio_final := NEW.precio_original - NEW.descuento_monto"
+--            PL/pgSQL function calcular_precio_final()
+--
+-- Que paso: la base traia un trigger anterior a este trabajo que calculaba
+-- `precio_final` a mano en cada escritura. La migracion 0004 elimino
+-- `precio_original` y convirtio `precio_final` en columna generada, pero
+-- dejo el trigger vivo, apuntando a columnas que ya no existen.
+--
+-- Por que no se detecto antes: el esquema solo se podia inspeccionar a
+-- traves de PostgREST, que expone tablas y columnas pero NO triggers. Habia
+-- codigo ejecutandose en cada escritura que no era visible desde fuera. La
+-- migracion 0004 debio comprobar dependencias antes de soltar columnas.
+--
+-- Ademas de ser obsoleto, ese trigger ya no podria funcionar aunque las
+-- columnas existieran: asignar a una columna GENERATED ALWAYS esta prohibido.
+--
+-- Esta migracion no borra un trigger concreto por su nombre, sino cualquiera
+-- sobre items_detalle que toque columnas eliminadas o generadas. Si hubiera
+-- mas de uno, caen todos y quedan listados en el aviso.
+
+begin;
+
+do $$
+declare
+  r          record;
+  v_fuente   text;
+  v_borrados int := 0;
+  v_lista    text := '';
+begin
+  for r in
+    select t.tgname, p.proname, p.oid as fn_oid
+    from pg_trigger t
+    join pg_class c     on c.oid = t.tgrelid
+    join pg_namespace n on n.oid = c.relnamespace
+    join pg_proc p      on p.oid = t.tgfoid
+    where n.nspname = 'public'
+      and c.relname = 'items_detalle'
+      and not t.tgisinternal
+  loop
+    begin
+      v_fuente := pg_get_functiondef(r.fn_oid);
+    exception when others then
+      v_fuente := '';
+    end;
+
+    -- Columnas que ya no existen, o que ahora son generadas y por tanto no
+    -- se pueden escribir desde un trigger.
+    if v_fuente ~* '(precio_original|peso_volumen|precio_final|descuento_porcentaje|tuvo_descuento|total_linea)' then
+      execute format('drop trigger if exists %I on public.items_detalle', r.tgname);
+      v_borrados := v_borrados + 1;
+      v_lista := v_lista || r.tgname || ' (' || r.proname || '), ';
+
+      -- La funcion solo se suelta si no la usa ningun otro trigger.
+      if not exists (
+        select 1 from pg_trigger t2 where t2.tgfoid = r.fn_oid and not t2.tgisinternal
+      ) then
+        execute format('drop function if exists public.%I() cascade', r.proname);
+      end if;
+    end if;
+  end loop;
+
+  if v_borrados > 0 then
+    raise notice 'Triggers obsoletos retirados: % -> %', v_borrados, rtrim(v_lista, ', ');
+  else
+    raise notice 'No habia triggers obsoletos en items_detalle.';
+  end if;
+end $$;
+
+-- Deja constancia de lo que queda vivo, para que no vuelva a haber codigo
+-- invisible ejecutandose en cada escritura.
+do $$
+declare
+  v_restantes text;
+begin
+  select string_agg(c.relname || '.' || t.tgname, ', ' order by c.relname, t.tgname)
+  into v_restantes
+  from pg_trigger t
+  join pg_class c     on c.oid = t.tgrelid
+  join pg_namespace n on n.oid = c.relnamespace
+  where n.nspname = 'public'
+    and not t.tgisinternal;
+
+  raise notice 'Triggers activos ahora: %', coalesce(v_restantes, 'ninguno');
+end $$;
+
+commit;
+
+
+-- ============================================================
+-- 0011_categorias_v3.sql
+-- ============================================================
+-- 0011 - Taxonomia de categorias v3
 --
 -- GENERADO por scripts/generar-migracion-categorias.mjs desde
 -- scripts/taxonomia.mjs. No editar a mano: regenerar.
@@ -294,7 +393,7 @@ begin
   where c.nombre like '%(antigua)'
     and not exists (select 1 from public.categorias h where h.parent_id = c.id)
     and not exists (select 1 from public.items_detalle i where i.categoria_id = c.id);
-  -- No se comprueba `productos`: esa tabla nace en 0011, despues de esta.
+  -- No se comprueba `productos`: esa tabla nace en 0012, despues de esta.
 
   get diagnostics v_borradas = row_count;
   raise notice 'Categorias antiguas retiradas: %', v_borradas;
@@ -304,9 +403,9 @@ commit;
 
 
 -- ============================================================
--- 0011_productos.sql
+-- 0012_productos.sql
 -- ============================================================
--- 0011 - Catalogo de productos y unidades estructuradas
+-- 0012 - Catalogo de productos y unidades estructuradas
 --
 -- GENERADO por scripts/generar-migracion-productos.mjs. No editar a mano.
 --
@@ -643,7 +742,7 @@ commit;
 
 
 -- ============================================================
--- 0012_establecimientos.sql
+-- 0013_establecimientos.sql
 -- ============================================================
 -- 0012 - Establecimientos
 --
@@ -694,7 +793,7 @@ commit;
 
 
 -- ============================================================
--- 0013_transferencias.sql
+-- 0014_transferencias.sql
 -- ============================================================
 -- 0013 - Transferencias entre cuentas propias y cuenta principal
 --
@@ -937,7 +1036,7 @@ commit;
 
 
 -- ============================================================
--- 0014_presupuestos.sql
+-- 0015_presupuestos.sql
 -- ============================================================
 -- 0014 - Limite de gasto mensual
 --

@@ -1,5 +1,5 @@
 /**
- * Genera supabase/migrations/0011_productos.sql desde el backup.
+ * Genera supabase/migrations/0012_productos.sql desde el backup.
  *
  * Crea el catálogo de productos a partir de los ítems históricos y resuelve
  * de paso el campo `peso_volumen`, que mezclaba tres conceptos distintos en
@@ -151,7 +151,7 @@ const filasVinculo = productos
 const conGranel = productos.filter((p) => p.vendidoPor === 'peso');
 const conContenido = productos.filter((p) => p.contenidoCantidad != null);
 
-const sql = `-- 0011 — Catálogo de productos y unidades estructuradas
+const sql = `-- 0012 — Catálogo de productos y unidades estructuradas
 --
 -- GENERADO por scripts/generar-migracion-productos.mjs. No editar a mano.
 --
@@ -321,7 +321,7 @@ alter table public.items_detalle drop column if exists peso_volumen;
 commit;
 `;
 
-const salida = 'supabase/migrations/0011_productos.sql';
+const salida = 'supabase/migrations/0012_productos.sql';
 writeFileSync(salida, sql);
 
 console.log(`Generado ${salida}`);

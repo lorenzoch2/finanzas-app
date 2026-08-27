@@ -1,5 +1,5 @@
 /**
- * Genera supabase/migrations/0010_categorias_v3.sql desde scripts/taxonomia.mjs.
+ * Genera supabase/migrations/0011_categorias_v3.sql desde scripts/taxonomia.mjs.
  *
  * Se genera en vez de escribirse a mano para que la taxonomía que revisaste y
  * el SQL que se aplica no puedan divergir: hay una sola fuente de verdad.
@@ -48,7 +48,7 @@ const filasTaxonomia = Object.entries(TAXONOMIA)
 const totalCategorias =
   Object.keys(TAXONOMIA).length + Object.values(TAXONOMIA).flat().length;
 
-const sql = `-- 0010 — Taxonomía de categorías v3
+const sql = `-- 0011 — Taxonomía de categorías v3
 --
 -- GENERADO por scripts/generar-migracion-categorias.mjs desde
 -- scripts/taxonomia.mjs. No editar a mano: regenerar.
@@ -190,7 +190,7 @@ begin
   where c.nombre like '%(antigua)'
     and not exists (select 1 from public.categorias h where h.parent_id = c.id)
     and not exists (select 1 from public.items_detalle i where i.categoria_id = c.id);
-  -- No se comprueba \`productos\`: esa tabla nace en 0011, después de esta.
+  -- No se comprueba \`productos\`: esa tabla nace en 0012, después de esta.
 
   get diagnostics v_borradas = row_count;
   raise notice 'Categorías antiguas retiradas: %', v_borradas;
@@ -199,7 +199,7 @@ end $$;
 commit;
 `;
 
-const salida = 'supabase/migrations/0010_categorias_v3.sql';
+const salida = 'supabase/migrations/0011_categorias_v3.sql';
 writeFileSync(salida, sql);
 
 console.log(`Generado ${salida}`);

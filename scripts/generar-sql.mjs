@@ -5,8 +5,8 @@
  *
  * Encadena tres cosas para que no se puedan desincronizar:
  *
- *   1. Genera 0010 y 0011 desde scripts/taxonomia.mjs.
- *   2. Junta 0010-0014 en un solo archivo.
+ *   1. Genera 0011 y 0012 desde scripts/taxonomia.mjs.
+ *   2. Junta 0010-0015 en un solo archivo.
  *   3. Lo convierte a ASCII puro.
  *
  * El paso 3 no es cosmético. Al copiar SQL al portapapeles desde Windows
@@ -25,15 +25,19 @@ import { basename } from 'node:path';
 import { aAscii } from './sql-ascii.mjs';
 
 const MIGRACIONES = [
-  'supabase/migrations/0010_categorias_v3.sql',
-  'supabase/migrations/0011_productos.sql',
-  'supabase/migrations/0012_establecimientos.sql',
-  'supabase/migrations/0013_transferencias.sql',
-  'supabase/migrations/0014_presupuestos.sql',
+  // La limpieza de triggers va PRIMERO: la base traia un trigger obsoleto
+  // que reventaba cualquier UPDATE sobre items_detalle, y la recategorizacion
+  // es justamente un UPDATE masivo sobre esa tabla.
+  'supabase/migrations/0010_limpiar_triggers.sql',
+  'supabase/migrations/0011_categorias_v3.sql',
+  'supabase/migrations/0012_productos.sql',
+  'supabase/migrations/0013_establecimientos.sql',
+  'supabase/migrations/0014_transferencias.sql',
+  'supabase/migrations/0015_presupuestos.sql',
 ];
 
 const CABECERA = `-- =====================================================================
--- FINANZAPP v3 - MIGRACIONES PENDIENTES (0010 a 0014)
+-- FINANZAPP v3 - MIGRACIONES PENDIENTES (0010 a 0015)
 --
 -- EJECUTALO ENTERO, DE UNA SOLA VEZ.
 -- No selecciones un trozo: los bloques "do $$ ... $$" son indivisibles y
@@ -52,12 +56,14 @@ const CABECERA = `-- ===========================================================
 --
 -- Es seguro volver a ejecutarlo si algo falla a medias.
 --
---   0010  Taxonomia nueva: 10 categorias y 41 subcategorias. Remapea los 93
+--   0010  Retira un trigger obsoleto que traia la base y que rompia
+--         cualquier escritura sobre items_detalle.
+--   0011  Taxonomia nueva: 10 categorias y 41 subcategorias. Remapea los 93
 --         items uno por uno. De 29% sin categoria a 0%.
---   0011  Catalogo de 75 productos y unidades estructuradas.
---   0012  Establecimientos, para comparar donde compras.
---   0013  Transferencias entre cuentas propias y cuenta principal.
---   0014  Limite de gasto mensual, con avance y proyeccion.
+--   0012  Catalogo de 75 productos y unidades estructuradas.
+--   0013  Establecimientos, para comparar donde compras.
+--   0014  Transferencias entre cuentas propias y cuenta principal.
+--   0015  Limite de gasto mensual, con avance y proyeccion.
 --
 -- Cada bloque va entre BEGIN/COMMIT: si uno falla se revierte entero.
 -- =====================================================================

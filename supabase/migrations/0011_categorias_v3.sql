@@ -1,4 +1,4 @@
--- 0010 — Taxonomía de categorías v3
+-- 0011 — Taxonomía de categorías v3
 --
 -- GENERADO por scripts/generar-migracion-categorias.mjs desde
 -- scripts/taxonomia.mjs. No editar a mano: regenerar.
@@ -261,7 +261,7 @@ begin
   where c.nombre like '%(antigua)'
     and not exists (select 1 from public.categorias h where h.parent_id = c.id)
     and not exists (select 1 from public.items_detalle i where i.categoria_id = c.id);
-  -- No se comprueba `productos`: esa tabla nace en 0011, después de esta.
+  -- No se comprueba `productos`: esa tabla nace en 0012, después de esta.
 
   get diagnostics v_borradas = row_count;
   raise notice 'Categorías antiguas retiradas: %', v_borradas;
