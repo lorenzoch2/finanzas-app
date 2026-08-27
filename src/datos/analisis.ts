@@ -14,6 +14,17 @@ import type { Database } from '@/lib/database.types';
 
 type Fn = Database['public']['Functions'];
 
+/**
+ * ¿Falla porque la migración de análisis todavía no se ha aplicado?
+ *
+ * Sin esto, abrir la pantalla antes de correr 0016 mostraría un error de
+ * PostgREST sobre una función que no existe, que no le dice a nadie qué hacer.
+ */
+export const faltaMigracion = (error: unknown): boolean => {
+  const mensaje = error instanceof Error ? error.message : String(error ?? '');
+  return /could not find the function|does not exist|schema cache|PGRST202|42883/i.test(mensaje);
+};
+
 export type GastoCategoria = Fn['gasto_por_categoria']['Returns'][number];
 export type PuntoEvolucion = Fn['evolucion_mensual']['Returns'][number];
 export type GastoEstablecimiento = Fn['gasto_por_establecimiento']['Returns'][number];

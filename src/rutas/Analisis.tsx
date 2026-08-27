@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link } from '@tanstack/react-router';
-import { Loader2, Store, Tag, TicketPercent, TrendingUp } from 'lucide-react';
+import { Loader2, Store, Tag, TicketPercent, TrendingUp, TriangleAlert } from 'lucide-react';
 import {
+  faltaMigracion,
   useAhorroDescuentos,
   useEvolucion,
   useGastoPorCategoria,
@@ -118,11 +119,41 @@ export default function Analisis() {
   const cargando =
     categorias.isPending || evolucion.isPending || establecimientos.isPending;
 
+  const errorCarga = categorias.error ?? evolucion.error ?? establecimientos.error;
+
   if (cargando) {
     return (
       <div className="flex items-center justify-center py-16">
         <Loader2 className="animate-spin text-brand-500" size={28} aria-label="Cargando" />
       </div>
+    );
+  }
+
+  // Sin la migración 0016 las funciones no existen, y el error de PostgREST no
+  // le dice a nadie qué hacer. Mejor decirlo en claro.
+  if (errorCarga && faltaMigracion(errorCarga)) {
+    return (
+      <div className="card p-6 text-center">
+        <TriangleAlert size={24} className="mx-auto mb-3 text-amber-500" aria-hidden />
+        <h2 className="text-lg font-bold text-slate-900">Falta aplicar una migración</h2>
+        <p className="mx-auto mt-2 max-w-md text-sm text-slate-600">
+          Esta pantalla necesita las funciones de análisis, que se crean con la migración{' '}
+          <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">0016_analisis</code>. Pégala
+          en el editor SQL de Supabase y vuelve aquí.
+        </p>
+        <p className="mt-3 text-xs text-slate-500">
+          Solo crea funciones de lectura: no toca ni una fila de tus datos.
+        </p>
+      </div>
+    );
+  }
+
+  if (errorCarga) {
+    return (
+      <p className="mensaje-error flex items-start gap-2">
+        <TriangleAlert size={18} className="mt-0.5 shrink-0" aria-hidden />
+        <span>{errorCarga instanceof Error ? errorCarga.message : 'No se pudo cargar el análisis.'}</span>
+      </p>
     );
   }
 
