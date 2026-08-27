@@ -45,6 +45,16 @@ begin;
 -- ------------------------------------------------- Gasto por categoria
 -- Devuelve la subcategoria y su categoria principal, para poder agrupar por
 -- cualquiera de las dos sin consultar dos veces.
+--
+-- IMPORTANTE: incluye el gasto NO detallado.
+--
+-- Partir solo de items_detalle dejaria fuera todo egreso registrado sin
+-- desglose, y eso hoy es el 20% del dinero: 23 de 72 egresos, $305.107. Un
+-- grafico que se come una quinta parte del gasto sin avisar es peor que no
+-- tener grafico, porque invita a concluir cosas falsas sobre el resto.
+--
+-- El resto no detallado aparece como su propia barra, asi que la suma del
+-- grafico cuadra con el total del mes en vez de quedarse corta en silencio.
 create or replace function public.gasto_por_categoria(
   p_mes date,
   p_tz  text default 'America/Santiago'
@@ -64,22 +74,48 @@ as $$
     select
       (date_trunc('month', p_mes)::timestamp at time zone p_tz)                        as inicio,
       ((date_trunc('month', p_mes) + interval '1 month')::timestamp at time zone p_tz)  as fin
+  ),
+  detallado as (
+    select
+      coalesce(padre.nombre, U&'Sin categor\00EDa') as categoria_padre,
+      coalesce(cat.nombre, U&'Sin categor\00EDa')   as categoria,
+      sum(i.total_linea)::numeric             as total,
+      count(*)::bigint                        as items
+    from public.items_detalle i
+    join public.transacciones t on t.id = i.transaccion_id
+    cross join limites l
+    left join public.categorias cat   on cat.id = i.categoria_id
+    left join public.categorias padre on padre.id = cat.parent_id
+    where t.tipo = 'egreso'
+      and t.fecha >= l.inicio
+      and t.fecha <  l.fin
+    group by 1, 2
+    having sum(i.total_linea) > 0
+  ),
+  -- Lo que cada egreso tiene por encima de lo que suman sus items: cubre
+  -- tanto las compras sin desglose como el remanente de una boleta
+  -- detallada solo en parte.
+  resto as (
+    select
+      'Sin detalle'::text as categoria_padre,
+      'Sin detalle'::text as categoria,
+      sum(greatest(t.monto - coalesce(d.suma, 0), 0))::numeric as total,
+      count(*)::bigint as items
+    from public.transacciones t
+    cross join limites l
+    left join (
+      select transaccion_id, sum(total_linea) as suma
+      from public.items_detalle
+      group by transaccion_id
+    ) d on d.transaccion_id = t.id
+    where t.tipo = 'egreso'
+      and t.fecha >= l.inicio
+      and t.fecha <  l.fin
+      and greatest(t.monto - coalesce(d.suma, 0), 0) > 0
   )
-  select
-    coalesce(padre.nombre, U&'Sin categor\00EDa'),
-    coalesce(cat.nombre, U&'Sin categor\00EDa'),
-    sum(i.total_linea)::numeric,
-    count(*)::bigint
-  from public.items_detalle i
-  join public.transacciones t on t.id = i.transaccion_id
-  cross join limites l
-  left join public.categorias cat   on cat.id = i.categoria_id
-  left join public.categorias padre on padre.id = cat.parent_id
-  where t.tipo = 'egreso'
-    and t.fecha >= l.inicio
-    and t.fecha <  l.fin
-  group by 1, 2
-  having sum(i.total_linea) > 0
+  select * from detallado
+  union all
+  select * from resto where total > 0
   order by 3 desc;
 $$;
 

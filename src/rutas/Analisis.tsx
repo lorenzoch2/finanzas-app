@@ -176,10 +176,21 @@ export default function Analisis() {
           </div>
         }
       >
-        <BarrasHorizontales
-          datos={barrasCategoria}
-          vacio="No hay gastos detallados este mes."
-        />
+        <BarrasHorizontales datos={barrasCategoria} vacio="No hay gastos este mes." />
+
+        {/*
+          «Sin detalle» no es una categoría: es el gasto registrado sin
+          desglosar. Se muestra en vez de omitirse para que las barras sumen el
+          total real del mes. Si se dejara fuera, el gráfico invitaría a sacar
+          conclusiones sobre una parte del dinero creyendo que es el todo.
+        */}
+        {barrasCategoria.some((b) => b.etiqueta === 'Sin detalle') ? (
+          <p className="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-xs text-slate-600">
+            <strong>Sin detalle</strong> es lo que registraste sin desglosar ítem por ítem. Aparece
+            para que el gráfico sume el total real del mes; a medida que detalles tus boletas, esa
+            barra se reparte entre las demás.
+          </p>
+        ) : null}
       </Seccion>
 
       <Seccion
