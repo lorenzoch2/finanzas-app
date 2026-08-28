@@ -33,14 +33,13 @@ import { aAscii } from './sql-ascii.mjs';
  *
  * Aplicadas: 0001-0015.
  */
-const MIGRACIONES = [
-  'supabase/migrations/0016_analisis.sql',
-  'supabase/migrations/0017_presupuestos_por_periodo.sql',
-  'supabase/migrations/0018_rangos_de_fecha.sql',
-];
+/**
+ * Migraciones que TODAVIA no se han aplicado. Aplicadas: 0001-0018.
+ */
+const MIGRACIONES = ['supabase/migrations/0019_ajustes_con_motivo.sql'];
 
 const CABECERA = `-- =====================================================================
--- FINANZAPP v3 - MIGRACIONES PENDIENTES (0016 a 0018)
+-- FINANZAPP v3 - MIGRACION PENDIENTE (0019)
 --
 -- EJECUTALO ENTERO, DE UNA SOLA VEZ.
 -- No selecciones un trozo: los bloques "do $$ ... $$" son indivisibles y
@@ -59,19 +58,18 @@ const CABECERA = `-- ===========================================================
 --
 -- Es seguro volver a ejecutarlo si algo falla a medias.
 --
---   0016  Agregaciones para la vista de analisis.
---   0017  Presupuestos por periodo libre y por cuenta. Migra el limite
---         mensual que hubiera al periodo equivalente.
---   0018  Todas las consultas pasan a recibir un rango de fechas en vez de
---         un mes. El mes deja de estar incrustado y pasa a ser el rango mas
---         habitual, no el unico posible.
+--   0019  Los ajustes de saldo dicen POR QUE se declara el saldo.
 --
--- Solo 0017 toca datos, y solo para trasladar el limite mensual anterior a
--- su periodo equivalente. El resto crea o reemplaza funciones.
+-- El problema que resuelve: hay dos formas de que entre dinero al sistema y
+-- solo una cuenta como ingreso. De todo lo que ha entrado, el 40% llego por
+-- ajuste de saldo, invisible para el libro. Por eso el margen salia negativo
+-- mes tras mes: contaba los gastos y no el dinero que los respaldaba.
 --
--- IMPORTANTE: aplicalo junto con la version desplegada de la app. Las
--- funciones cambian de firma, asi que una version antigua dejaria de
--- encontrarlas.
+-- Toca datos una sola vez: marca los dos ajustes existentes como ingresos que
+-- no se anotaron, que es lo que eran.
+--
+-- IMPORTANTE: aplicalo junto con la version desplegada. resumen_periodo y
+-- evolucion_mensual cambian de firma.
 --
 -- Cada bloque va entre BEGIN/COMMIT: si uno falla se revierte entero.
 -- =====================================================================

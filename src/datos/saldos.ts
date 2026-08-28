@@ -38,7 +38,7 @@ export function useResumen(desde: string, hasta: string, zona: string) {
         p_tz: zona,
       });
       if (error) throw new Error(mensajeDeError(error));
-      return data?.[0] ?? { ingresos: 0, gastos: 0 };
+      return data?.[0] ?? { ingresos: 0, gastos: 0, ingresos_conciliados: 0, gastos_conciliados: 0 };
     },
   });
 }

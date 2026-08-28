@@ -140,9 +140,13 @@ export default function Analisis() {
       ingresos: Number(p.ingresos),
       gastos: Number(p.gastos),
       limite: Number(p.limite),
+      sinDatos: Boolean(p.sin_datos),
     }));
 
-    const primero = datos.findIndex((p) => p.ingresos > 0 || p.gastos > 0);
+    // Se recortan los meses sin datos del PRINCIPIO: empezar la serie con
+    // huecos no aporta nada. Los intermedios se conservan y se dibujan como
+    // huecos, porque un vacio en medio si es informacion.
+    const primero = datos.findIndex((p) => !p.sinDatos);
     return primero <= 0 ? datos : datos.slice(primero);
   }, [evolucion.data]);
 

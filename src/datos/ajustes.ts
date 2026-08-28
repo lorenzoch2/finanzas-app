@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { claves } from '@/lib/query';
 import { mensajeDeError, supabase } from '@/lib/supabase';
-import type { AjusteSaldo, NuevoAjuste } from '@/lib/database.types';
+import type { AjusteSaldo, BrechaAjuste, MotivoAjuste, NuevoAjuste } from '@/lib/database.types';
 
 /**
  * Ajustes de saldo.
@@ -18,6 +18,51 @@ import type { AjusteSaldo, NuevoAjuste } from '@/lib/database.types';
 export type AjusteConFuente = AjusteSaldo & {
   fuentes_cuentas: { id: string; nombre: string } | null;
 };
+
+/**
+ * Por qué se declara un saldo.
+ *
+ * Solo dos de los cuatro mueven los totales del período: una apertura es el
+ * punto de partida y una corrección arregla un error de tecleo, pero en
+ * ninguna entra o sale dinero ahora.
+ */
+export const MOTIVOS: { valor: MotivoAjuste; etiqueta: string; explica: string }[] = [
+  {
+    valor: 'apertura',
+    etiqueta: 'Capital que ya tenía',
+    explica: 'El punto de partida. No cuenta como ingreso de ningún mes.',
+  },
+  {
+    valor: 'ingreso_no_registrado',
+    etiqueta: 'Entró plata y no la anoté',
+    explica: 'La diferencia cuenta como ingreso de esta fecha.',
+  },
+  {
+    valor: 'gasto_no_registrado',
+    etiqueta: 'Salió plata y no la anoté',
+    explica: 'La diferencia cuenta como gasto de esta fecha.',
+  },
+  {
+    valor: 'correccion',
+    etiqueta: 'Me equivoqué al anotar',
+    explica: 'Corrige el saldo sin tocar los totales del período.',
+  },
+];
+
+/**
+ * Lo que revela cada ajuste: qué decía el libro, qué declaraste, y el hueco
+ * entre ambos. Ese hueco es exactamente el dinero que se quedó sin registrar.
+ */
+export function useBrechas(zona: string) {
+  return useQuery({
+    queryKey: ['brechas', zona],
+    queryFn: async (): Promise<BrechaAjuste[]> => {
+      const { data, error } = await supabase.rpc('brecha_de_ajustes', { p_tz: zona });
+      if (error) throw new Error(mensajeDeError(error));
+      return data ?? [];
+    },
+  });
+}
 
 export function useAjustes() {
   return useQuery({
@@ -38,6 +83,11 @@ const invalidar = (qc: ReturnType<typeof useQueryClient>) => {
   void qc.invalidateQueries({ queryKey: claves.ajustes });
   void qc.invalidateQueries({ queryKey: ['saldos'] });
   void qc.invalidateQueries({ queryKey: ['resumen'] });
+  // Un ajuste puede cambiar los ingresos y gastos del periodo, asi que el
+  // analisis y el presupuesto tambien dejan de ser validos.
+  void qc.invalidateQueries({ queryKey: ['brechas'] });
+  void qc.invalidateQueries({ queryKey: ['analisis'] });
+  void qc.invalidateQueries({ queryKey: ['presupuesto'] });
 };
 
 export function useCrearAjuste() {

@@ -31,6 +31,19 @@ export type UnidadContenido = 'g' | 'kg' | 'ml' | 'l' | 'unidad';
  */
 export type VendidoPor = 'unidad' | 'peso';
 
+/**
+ * Por qué se declaró un saldo.
+ *
+ * Solo dos de los cuatro afectan al período: una apertura es el punto de
+ * partida y una corrección arregla un error, pero ninguna es dinero que entre
+ * o salga ahora.
+ */
+export type MotivoAjuste =
+  | 'apertura'
+  | 'ingreso_no_registrado'
+  | 'gasto_no_registrado'
+  | 'correccion';
+
 export type TipoEstablecimiento =
   | 'supermercado'
   | 'feria'
@@ -268,6 +281,7 @@ export interface Database {
           fuente_id: string;
           fecha_referencia: string;
           monto_ajustado: number;
+          motivo: MotivoAjuste;
           nota: string | null;
           user_id: string;
         };
@@ -276,6 +290,7 @@ export interface Database {
           fuente_id: string;
           fecha_referencia: string;
           monto_ajustado: number;
+          motivo?: MotivoAjuste;
           nota?: string | null;
           user_id?: string;
         };
@@ -283,6 +298,7 @@ export interface Database {
           fuente_id?: string;
           fecha_referencia?: string;
           monto_ajustado?: number;
+          motivo?: MotivoAjuste;
           nota?: string | null;
         };
         Relationships: [
@@ -420,9 +436,28 @@ export interface Database {
       resumen_periodo: {
         Args: { p_desde: string; p_hasta: string; p_tz?: string };
         // Las transferencias no aparecen aquí: no son ingreso ni gasto.
+        //
+        // Los totales incluyen lo que revelaron los ajustes de saldo, y se
+        // devuelve aparte cuánto viene de ahí: no es lo mismo saber que
+        // ganaste algo que deducirlo de un saldo.
         Returns: {
           ingresos: number;
           gastos: number;
+          ingresos_conciliados: number;
+          gastos_conciliados: number;
+        }[];
+      };
+      brecha_de_ajustes: {
+        Args: { p_tz?: string };
+        Returns: {
+          ajuste_id: string;
+          fuente_id: string;
+          fuente: string;
+          fecha: string;
+          motivo: MotivoAjuste;
+          declarado: number;
+          segun_libro: number;
+          brecha: number;
         }[];
       };
       avance_presupuestos: {
@@ -464,7 +499,15 @@ export interface Database {
       };
       evolucion_mensual: {
         Args: { p_desde: string; p_hasta: string; p_tz?: string };
-        Returns: { mes: string; ingresos: number; gastos: number; limite: number }[];
+        // `sin_datos` distingue «no gastaste» de «no registraste». Sin él, el
+        // grafico dibujaba un cero donde en realidad no sabia nada.
+        Returns: {
+          mes: string;
+          ingresos: number;
+          gastos: number;
+          limite: number;
+          sin_datos: boolean;
+        }[];
       };
       gasto_por_establecimiento: {
         Args: { p_desde: string; p_hasta: string; p_tz?: string };
@@ -526,6 +569,7 @@ type Funciones = Database['public']['Functions'];
 export type SaldoPorFuente = Funciones['saldos_por_fuente']['Returns'][number];
 export type ResumenMensual = Funciones['resumen_periodo']['Returns'][number];
 export type AvancePresupuesto = Funciones['avance_presupuestos']['Returns'][number];
+export type BrechaAjuste = Funciones['brecha_de_ajustes']['Returns'][number];
 
 /** Transacción con su detalle, como la devuelve la consulta anidada. */
 export type TransaccionConDetalle = Transaccion & {

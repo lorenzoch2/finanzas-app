@@ -1,35 +1,28 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Loader2, Plus, Star, Trash2 } from 'lucide-react';
-import { useBorrarAjuste, useCrearAjuste, useAjustes } from '@/datos/ajustes';
-import { useCrearFuente, useFuentes, useMarcarPrincipal, useSaldos } from '@/datos/saldos';
+import { MOTIVOS, useBorrarAjuste, useAjustes } from '@/datos/ajustes';
+import { useCrearFuente, useMarcarPrincipal, useSaldos } from '@/datos/saldos';
 import FormularioTransferencia from '@/componentes/FormularioTransferencia';
+import FormularioAjuste from '@/componentes/FormularioAjuste';
 import AvisoMigracion from '@/componentes/AvisoMigracion';
 import { faltaMigracion } from '@/lib/supabase';
 import { useEstadoApp } from '@/lib/estadoApp';
-import { formatearCLP, parsearMonto } from '@/lib/dinero';
-import { formatearFechaSola, paraInputDate } from '@/lib/fecha';
+import { formatearCLP } from '@/lib/dinero';
+import { formatearFechaSola } from '@/lib/fecha';
 
 export default function Saldos() {
   const { rango, zona } = useEstadoApp();
-  const { data: fuentes = [] } = useFuentes();
   // El saldo es «a fecha de»: el cierre del período que se está mirando.
   const saldos = useSaldos(rango.hasta, zona);
   const ajustes = useAjustes();
 
   const crearFuente = useCrearFuente();
-  const crearAjuste = useCrearAjuste();
   const borrarAjuste = useBorrarAjuste();
   const marcarPrincipal = useMarcarPrincipal();
 
   const [nombreFuente, setNombreFuente] = useState('');
   const [tipoFuente, setTipoFuente] = useState('cuenta');
-  const [ajuste, setAjuste] = useState({
-    fuente_id: '',
-    fecha_referencia: paraInputDate(new Date(), zona),
-    monto: '',
-    nota: '',
-  });
   const [error, setError] = useState<string | null>(null);
 
   const enviarFuente = async (evento: FormEvent) => {
@@ -40,29 +33,6 @@ export default function Saldos() {
       setNombreFuente('');
     } catch (fallo) {
       setError(fallo instanceof Error ? fallo.message : 'No se pudo crear la fuente.');
-    }
-  };
-
-  const enviarAjuste = async (evento: FormEvent) => {
-    evento.preventDefault();
-    setError(null);
-
-    const monto = parsearMonto(ajuste.monto);
-    if (monto == null) {
-      setError('Indica el monto del ajuste.');
-      return;
-    }
-
-    try {
-      await crearAjuste.mutateAsync({
-        fuente_id: ajuste.fuente_id,
-        fecha_referencia: ajuste.fecha_referencia,
-        monto_ajustado: monto,
-        nota: ajuste.nota || null,
-      });
-      setAjuste((previo) => ({ ...previo, monto: '', nota: '' }));
-    } catch (fallo) {
-      setError(fallo instanceof Error ? fallo.message : 'No se pudo guardar el ajuste.');
     }
   };
 
@@ -167,54 +137,9 @@ export default function Saldos() {
       <div className="card p-5 sm:p-6">
         <h2 className="mb-4 text-lg font-bold text-tinta">Ajustes de saldo</h2>
 
-        <form onSubmit={(e) => void enviarAjuste(e)} className="mb-5 grid gap-3 sm:grid-cols-2">
-          <select
-            className="input"
-            value={ajuste.fuente_id}
-            onChange={(e) => setAjuste({ ...ajuste, fuente_id: e.target.value })}
-            required
-          >
-            <option value="">Elige la fuente</option>
-            {fuentes.map((fuente) => (
-              <option key={fuente.id} value={fuente.id}>
-                {fuente.nombre}
-              </option>
-            ))}
-          </select>
-
-          <input
-            type="date"
-            className="input"
-            value={ajuste.fecha_referencia}
-            onChange={(e) => setAjuste({ ...ajuste, fecha_referencia: e.target.value })}
-            required
-          />
-
-          <input
-            className="input"
-            inputMode="decimal"
-            placeholder="Saldo en esa fecha"
-            value={ajuste.monto}
-            onChange={(e) => setAjuste({ ...ajuste, monto: e.target.value })}
-            required
-          />
-
-          <input
-            className="input"
-            placeholder="Nota (opcional)"
-            value={ajuste.nota}
-            onChange={(e) => setAjuste({ ...ajuste, nota: e.target.value })}
-          />
-
-          <button
-            type="submit"
-            className="button-primary sm:col-span-2"
-            disabled={crearAjuste.isPending}
-          >
-            {crearAjuste.isPending ? <Loader2 size={16} className="animate-spin" aria-hidden /> : null}
-            Registrar ajuste
-          </button>
-        </form>
+        <div className="mb-5">
+          <FormularioAjuste />
+        </div>
 
         {ajustes.isPending ? (
           <p className="text-sm text-tinta-3">Cargando ajustes…</p>
@@ -232,6 +157,8 @@ export default function Saldos() {
                   </p>
                   <p className="text-xs text-tinta-3">
                     Desde {formatearFechaSola(registro.fecha_referencia)}
+                    {' · '}
+                    {MOTIVOS.find((m) => m.valor === registro.motivo)?.etiqueta ?? registro.motivo}
                     {registro.nota ? ` · ${registro.nota}` : ''}
                   </p>
                 </div>
