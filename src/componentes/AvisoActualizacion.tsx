@@ -32,13 +32,13 @@ export default function AvisoActualizacion() {
   return (
     <div
       role="status"
-      className="fixed inset-x-3 bottom-24 z-50 mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-brand-200 bg-white px-4 py-3 shadow-soft md:bottom-6"
+      className="fixed inset-x-3 bottom-24 z-50 mx-auto flex max-w-md items-center gap-3 rounded-campo border border-acento-borde bg-tarjeta px-4 py-3 shadow-soft md:bottom-6"
     >
-      <span className="shrink-0 rounded-xl bg-brand-50 p-2 text-brand-700">
+      <span className="shrink-0 rounded-xl bg-acento-suave p-2 text-acento">
         <Download size={18} aria-hidden />
       </span>
 
-      <p className="min-w-0 flex-1 text-sm text-slate-700">
+      <p className="min-w-0 flex-1 text-sm text-tinta-2">
         Hay una versión nueva de Finanzapp.
       </p>
 

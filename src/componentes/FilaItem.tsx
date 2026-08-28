@@ -69,13 +69,13 @@ export default function FilaItem({
   };
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-4">
+    <div className="rounded-tarjeta border border-borde bg-tarjeta p-4">
       <div className="mb-3 flex items-center justify-between">
         <span className="chip">Ítem {indice + 1}</span>
         {puedeQuitar ? (
           <button
             type="button"
-            className="button-ghost px-2 py-1 text-rose-600"
+            className="button-ghost px-2 py-1 text-sale"
             onClick={onQuitar}
             aria-label={`Quitar ítem ${indice + 1}`}
           >
@@ -207,19 +207,19 @@ export default function FilaItem({
         />
 
         {precio > 0 ? (
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-tinta-3">
             {descuento > 0 ? (
               <>
                 {formatearCLP(precio)} − {formatearCLP(descuento)} (
                 {porcentajeDescuento(precio, descuento)}%) ={' '}
-                <strong className="text-slate-700">
+                <strong className="text-tinta-2">
                   {formatearCLP(precioConDescuento(precio, descuento))}
                 </strong>
                 {esGranel ? ' /kg' : ' c/u'} ·{' '}
               </>
             ) : null}
             Total:{' '}
-            <strong className="text-slate-700">{formatearCLP(item ? totalDeItem(item) : 0)}</strong>
+            <strong className="text-tinta-2">{formatearCLP(item ? totalDeItem(item) : 0)}</strong>
           </p>
         ) : null}
       </div>

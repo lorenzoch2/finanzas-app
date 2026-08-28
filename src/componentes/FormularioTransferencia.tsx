@@ -70,8 +70,8 @@ export default function FormularioTransferencia({ onHecha }: { onHecha?: () => v
   if (fuentes.length < 2) {
     return (
       <div className="card p-5 sm:p-6">
-        <h2 className="text-lg font-bold text-slate-900">Traspaso entre cuentas</h2>
-        <p className="mt-2 text-sm text-slate-600">
+        <h2 className="text-lg font-bold text-tinta">Traspaso entre cuentas</h2>
+        <p className="mt-2 text-sm text-tinta-2">
           Necesitas al menos dos cuentas para poder mover dinero entre ellas.
         </p>
       </div>
@@ -81,11 +81,11 @@ export default function FormularioTransferencia({ onHecha }: { onHecha?: () => v
   return (
     <form onSubmit={(e) => void enviar(e)} className="card space-y-4 p-5 sm:p-6">
       <div className="flex items-center gap-2">
-        <Repeat size={18} className="text-slate-400" aria-hidden />
-        <h2 className="text-lg font-bold text-slate-900">Traspaso entre cuentas</h2>
+        <Repeat size={18} className="text-tinta-3" aria-hidden />
+        <h2 className="text-lg font-bold text-tinta">Traspaso entre cuentas</h2>
       </div>
 
-      <p className="text-sm text-slate-600">
+      <p className="text-sm text-tinta-2">
         Mover plata entre tus cuentas no es un gasto ni un ingreso, así que no altera los totales del
         mes ni el avance de tu límite.
       </p>
@@ -113,7 +113,7 @@ export default function FormularioTransferencia({ onHecha }: { onHecha?: () => v
         </div>
 
         <div className="hidden pb-3 sm:block">
-          <ArrowRight size={18} className="text-slate-300" aria-hidden />
+          <ArrowRight size={18} className="text-tinta-3" aria-hidden />
         </div>
 
         <div className="space-y-1.5">
@@ -154,7 +154,7 @@ export default function FormularioTransferencia({ onHecha }: { onHecha?: () => v
             onChange={(e) => setMonto(e.target.value)}
             required
           />
-          {importe > 0 ? <p className="text-xs text-slate-500">{formatearCLP(importe)}</p> : null}
+          {importe > 0 ? <p className="text-xs text-tinta-3">{formatearCLP(importe)}</p> : null}
         </div>
 
         <div className="space-y-1.5">

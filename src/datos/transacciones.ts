@@ -40,7 +40,12 @@ export interface TransaccionFormulario {
 }
 
 const SELECT_COMPLETO =
-  '*, items_detalle(*, productos(id, nombre, marca)), fuentes_cuentas!fk_transacciones_fuente(id, nombre, tipo), establecimientos(id, nombre, tipo)';
+  '*, items_detalle(*, productos(id, nombre, marca)), ' +
+  'fuentes_cuentas!fk_transacciones_fuente(id, nombre, tipo), ' +
+  // La cuenta de destino solo existe en los traspasos, y hace falta para
+  // poder decir «de esta cuenta a esta otra» en vez de solo «Traspaso».
+  'destino:fuentes_cuentas!transacciones_fuente_destino_id_fkey(id, nombre), ' +
+  'establecimientos(id, nombre, tipo)';
 
 export function useTransaccionesDelMes(mes: string, zona: string) {
   return useQuery({

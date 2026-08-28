@@ -90,13 +90,13 @@ export default function Login() {
     <div className="flex min-h-dvh items-center justify-center px-4 py-10">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <p className="text-xs font-semibold tracking-[0.3em] text-brand-600 uppercase">finanzapp</p>
-          <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-900">{titulo}</h1>
+          <p className="text-xs font-semibold tracking-[0.3em] text-acento uppercase">finanzapp</p>
+          <h1 className="mt-2 text-2xl font-black tracking-tight text-tinta">{titulo}</h1>
         </div>
 
         <form onSubmit={(e) => void enviar(e)} className="card space-y-4 p-6">
           {modo === 'recuperar' ? (
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-tinta-2">
               Te enviamos un enlace para fijar una contraseña nueva.
             </p>
           ) : null}
@@ -109,7 +109,7 @@ export default function Login() {
               <Mail
                 size={16}
                 aria-hidden
-                className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400"
+                className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-tinta-3"
               />
               <input
                 id="email"
@@ -133,7 +133,7 @@ export default function Login() {
                 <KeyRound
                   size={16}
                   aria-hidden
-                  className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-slate-400"
+                  className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-tinta-3"
                 />
                 <input
                   id="password"
@@ -181,7 +181,7 @@ export default function Login() {
               {modo === 'entrar' ? (
                 <button
                   type="button"
-                  className="w-full text-center text-sm text-slate-500 underline underline-offset-4 hover:text-slate-700"
+                  className="w-full text-center text-sm text-tinta-3 underline underline-offset-4 hover:text-tinta-2"
                   onClick={() => cambiarModo('recuperar')}
                 >
                   Olvidé mi contraseña

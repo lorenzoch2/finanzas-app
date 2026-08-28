@@ -48,18 +48,18 @@ export default class LimiteDeError extends Component<Props, Estado> {
       <div className="flex min-h-dvh items-center justify-center px-4 py-10">
         <div className="card w-full max-w-md p-6">
           <div className="mb-4 flex items-center gap-3">
-            <span className="rounded-2xl bg-rose-50 p-3 text-rose-600">
+            <span className="rounded-campo bg-sale-suave p-3 text-sale">
               <TriangleAlert size={20} aria-hidden />
             </span>
-            <h1 className="text-lg font-bold text-slate-900">Algo se rompió</h1>
+            <h1 className="text-lg font-bold text-tinta">Algo se rompió</h1>
           </div>
 
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-tinta-2">
             La pantalla falló al dibujarse. Tus datos están a salvo: esto ocurrió en la interfaz, no
             en la base.
           </p>
 
-          <pre className="mt-4 max-h-40 overflow-auto rounded-2xl bg-slate-50 p-3 text-xs text-slate-600">
+          <pre className="mt-4 max-h-40 overflow-auto rounded-campo bg-elevado p-3 text-xs text-tinta-2">
             {error.message}
           </pre>
 

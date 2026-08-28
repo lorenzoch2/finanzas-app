@@ -180,6 +180,11 @@ export const mesSiguiente = (mes: MesKey): MesKey => {
 export const formatearMes = (mes: MesKey, locale = 'es-CL'): string => {
   const [year, month] = mes.split('-').map(Number);
   if (!year || !month) return mes;
-  return new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric', timeZone: 'UTC' })
+
+  const texto = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric', timeZone: 'UTC' })
     .format(new Date(Date.UTC(year, month - 1, 1)));
+
+  // Solo la primera letra. La clase `capitalize` de CSS ponia mayuscula a cada
+  // palabra y producia «Agosto De 2026», con la preposicion en mayuscula.
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
 };

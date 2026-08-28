@@ -60,10 +60,10 @@ export default function BannerOffline() {
   return (
     <div
       role="status"
-      className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm ${
+      className={`flex items-center gap-3 rounded-campo px-4 py-3 text-sm ${
         enLinea
-          ? 'border border-amber-200 bg-amber-50 text-amber-800'
-          : 'border border-slate-200 bg-slate-100 text-slate-700'
+          ? 'border border-alerta/30 bg-alerta-suave text-alerta'
+          : 'border border-borde bg-elevado text-tinta-2'
       }`}
     >
       {!enLinea ? (
@@ -89,7 +89,7 @@ export default function BannerOffline() {
       {enLinea && pendientes.length > 0 ? (
         <button
           type="button"
-          className="button-ghost shrink-0 px-2 py-1 text-amber-900"
+          className="button-ghost shrink-0 px-2 py-1 text-alerta"
           onClick={() => sincronizar.mutate()}
           disabled={sincronizar.isPending}
           aria-label="Sincronizar ahora"

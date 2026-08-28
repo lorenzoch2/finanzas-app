@@ -30,7 +30,7 @@ function Puerta() {
   if (cargando) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
-        <Loader2 className="animate-spin text-brand-500" size={28} aria-label="Cargando" />
+        <Loader2 className="animate-spin text-acento" size={28} aria-label="Cargando" />
       </div>
     );
   }

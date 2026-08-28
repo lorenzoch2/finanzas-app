@@ -477,6 +477,8 @@ export type AvancePresupuesto = Funciones['avance_presupuesto']['Returns'][numbe
 export type TransaccionConDetalle = Transaccion & {
   items_detalle: (ItemDetalle & { productos: Pick<Producto, 'id' | 'nombre' | 'marca'> | null })[];
   fuentes_cuentas: Pick<Fuente, 'id' | 'nombre' | 'tipo'> | null;
+  /** Solo en traspasos: la cuenta que recibe. */
+  destino: Pick<Fuente, 'id' | 'nombre'> | null;
   establecimientos: Pick<Establecimiento, 'id' | 'nombre' | 'tipo'> | null;
 };
 

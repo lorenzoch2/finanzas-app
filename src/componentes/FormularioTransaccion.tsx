@@ -231,7 +231,7 @@ export default function FormularioTransaccion({ transaccion, onGuardado, onCance
   return (
     <form onSubmit={(e) => void enviar(e)} className="card space-y-5 p-5 sm:p-6">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg font-bold text-slate-900">
+        <h2 className="text-lg font-bold text-tinta">
           {editando ? 'Editar transacción' : 'Nueva transacción'}
         </h2>
         {onCancelar ? (
@@ -253,9 +253,9 @@ export default function FormularioTransaccion({ transaccion, onGuardado, onCance
               className={`button py-3 ${
                 tipo === valor
                   ? valor === 'egreso'
-                    ? 'bg-rose-600 text-white'
-                    : 'bg-emerald-600 text-white'
-                  : 'border border-slate-200 bg-white text-slate-600'
+                    ? 'bg-sale text-white'
+                    : 'bg-entra text-white'
+                  : 'border border-borde bg-tarjeta text-tinta-2'
               }`}
             >
               {valor === 'egreso' ? 'Gasto' : 'Ingreso'}
@@ -297,7 +297,7 @@ export default function FormularioTransaccion({ transaccion, onGuardado, onCance
         {puedeDetallar ? (
           <div className="space-y-1.5">
             <label className="label" htmlFor="establecimiento">
-              <Store size={14} className="mr-1 inline text-slate-400" aria-hidden />
+              <Store size={14} className="mr-1 inline text-tinta-3" aria-hidden />
               Dónde
             </label>
             <select id="establecimiento" className="input" {...register('establecimiento_id')}>
@@ -333,9 +333,9 @@ export default function FormularioTransaccion({ transaccion, onGuardado, onCance
       </div>
 
       {puedeDetallar ? (
-        <label className="flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3">
+        <label className="flex items-center gap-3 rounded-campo bg-elevado px-4 py-3">
           <input type="checkbox" className="size-4 accent-brand-600" {...register('detallado')} />
-          <span className="text-sm font-medium text-slate-700">Detallar la boleta ítem por ítem</span>
+          <span className="text-sm font-medium text-tinta-2">Detallar la boleta ítem por ítem</span>
         </label>
       ) : null}
 
@@ -366,7 +366,7 @@ export default function FormularioTransaccion({ transaccion, onGuardado, onCance
 
       {error ? <p className="mensaje-error">{error}</p> : null}
       {aviso ? (
-        <p className={encolada ? 'mensaje-error border-amber-200 bg-amber-50 text-amber-800' : 'mensaje-ok'}>
+        <p className={encolada ? 'mensaje-error border-alerta/30 bg-alerta-suave text-alerta' : 'mensaje-ok'}>
           {encolada ? <CloudOff size={14} className="mr-1 inline" aria-hidden /> : null}
           {aviso}
         </p>

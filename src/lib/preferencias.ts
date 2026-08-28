@@ -65,3 +65,47 @@ export function useZonaHoraria(): [string, (zona: string) => void] {
 
   return [zona, setZona];
 }
+
+/**
+ * Tema: claro, oscuro o el del sistema.
+ *
+ * Por defecto sigue al sistema, que es lo que espera casi todo el mundo, pero
+ * la elección explícita gana en ambos sentidos: alguien con el sistema en
+ * oscuro puede querer la app en claro.
+ *
+ * Se aplica escribiendo `data-theme` en <html>, que es donde el CSS espera
+ * encontrarlo. Se guarda por dispositivo, como la zona horaria: el teléfono y
+ * el escritorio se usan en condiciones de luz distintas.
+ */
+
+const CLAVE_TEMA = 'finanzapp:tema';
+
+export type Tema = 'sistema' | 'claro' | 'oscuro';
+
+const esTema = (valor: string | null): valor is Tema =>
+  valor === 'sistema' || valor === 'claro' || valor === 'oscuro';
+
+const aplicarTema = (tema: Tema): void => {
+  const raiz = document.documentElement;
+  if (tema === 'sistema') raiz.removeAttribute('data-theme');
+  else raiz.setAttribute('data-theme', tema);
+};
+
+export function useTema(): [Tema, (tema: Tema) => void] {
+  const [tema, setTemaEstado] = useState<Tema>(() => {
+    const guardado = leer(CLAVE_TEMA);
+    return esTema(guardado) ? guardado : 'sistema';
+  });
+
+  // Se aplica también al montar: el atributo no sobrevive a una recarga.
+  useEffect(() => {
+    aplicarTema(tema);
+  }, [tema]);
+
+  const setTema = useCallback((nuevo: Tema) => {
+    setTemaEstado(nuevo);
+    escribir(CLAVE_TEMA, nuevo);
+  }, []);
+
+  return [tema, setTema];
+}

@@ -80,30 +80,53 @@ export default function Movimientos() {
 
       <div className="card p-5 sm:p-6">
         <div className="mb-4 flex items-baseline justify-between gap-3">
-          <h2 className="text-lg font-bold text-slate-900 capitalize">{formatearMes(mes)}</h2>
-          <span className="text-sm text-slate-500">
+          <h2 className="text-lg font-bold text-tinta">{formatearMes(mes)}</h2>
+          <span className="text-sm text-tinta-3">
             {transacciones.length} {transacciones.length === 1 ? 'movimiento' : 'movimientos'}
           </span>
         </div>
 
         {consulta.isPending ? (
-          <p className="flex items-center gap-2 text-sm text-slate-500">
+          <p className="flex items-center gap-2 text-sm text-tinta-3">
             <Loader2 size={16} className="animate-spin" aria-hidden /> Cargando…
           </p>
         ) : null}
 
         {!consulta.isPending && transacciones.length === 0 ? (
-          <p className="rounded-3xl bg-slate-50 p-6 text-center text-sm text-slate-600">
+          <p className="rounded-tarjeta bg-elevado p-6 text-center text-sm text-tinta-2">
             No hay movimientos en este mes.
           </p>
         ) : null}
 
-        <ul className="divide-y divide-slate-100">
+        <ul className="divide-y divide-borde-suave">
           {transacciones.map((transaccion) => {
             const esIngreso = transaccion.tipo === 'ingreso';
             const esTransferencia = transaccion.tipo === 'transferencia';
             const items = transaccion.items_detalle ?? [];
             const abierta = expandida === transaccion.id;
+
+            /*
+              Cada fila debe decir QUE fue, no de que tipo. Antes veinte filas
+              seguidas decian «Gasto», que es justo lo que ya indica el icono y
+              el signo del monto: la palabra no aportaba nada y la lista era
+              indistinguible.
+
+              Se usa lo mas informativo que haya: la nota si la escribiste, si
+              no los productos, si no el local, y solo como ultimo recurso el
+              tipo.
+            */
+            const productos = items
+              .map((i) => i.productos?.nombre ?? i.nombre_producto)
+              .filter((n): n is string => Boolean(n));
+
+            const titulo = esTransferencia
+              ? `${transaccion.fuentes_cuentas?.nombre ?? 'Origen'} → ${transaccion.destino?.nombre ?? 'Destino'}`
+              : transaccion.nota ||
+                (productos.length
+                  ? productos.slice(0, 3).join(', ') +
+                    (productos.length > 3 ? ` y ${productos.length - 3} más` : '')
+                  : transaccion.establecimientos?.nombre) ||
+                (esIngreso ? 'Ingreso' : 'Gasto');
 
             return (
               <li key={transaccion.id} className="py-3">
@@ -111,10 +134,10 @@ export default function Movimientos() {
                   <span
                     className={`mt-0.5 shrink-0 rounded-xl p-2 ${
                       esTransferencia
-                        ? 'bg-slate-100 text-slate-500'
+                        ? 'bg-elevado text-tinta-3'
                         : esIngreso
-                          ? 'bg-emerald-50 text-emerald-600'
-                          : 'bg-rose-50 text-rose-600'
+                          ? 'bg-entra-suave text-entra'
+                          : 'bg-sale-suave text-sale'
                     }`}
                   >
                     {esTransferencia ? (
@@ -128,10 +151,7 @@ export default function Movimientos() {
 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-baseline justify-between gap-3">
-                      <p className="truncate font-semibold text-slate-900">
-                        {transaccion.nota ||
-                          (esTransferencia ? 'Traspaso' : esIngreso ? 'Ingreso' : 'Gasto')}
-                      </p>
+                      <p className="truncate font-semibold text-tinta">{titulo}</p>
                       {/*
                         Un traspaso no lleva signo: no entra ni sale dinero del
                         patrimonio, solo cambia de cuenta.
@@ -139,10 +159,10 @@ export default function Movimientos() {
                       <strong
                         className={`shrink-0 tabular-nums ${
                           esTransferencia
-                            ? 'text-slate-500'
+                            ? 'text-tinta-3'
                             : esIngreso
-                              ? 'text-emerald-700'
-                              : 'text-slate-900'
+                              ? 'text-entra'
+                              : 'text-tinta'
                         }`}
                       >
                         {esTransferencia ? '' : esIngreso ? '+' : '−'}
@@ -150,10 +170,14 @@ export default function Movimientos() {
                       </strong>
                     </div>
 
-                    <p className="mt-0.5 text-xs text-slate-500">
+                    <p className="mt-0.5 text-xs text-tinta-3">
                       {formatearFechaHora(new Date(transaccion.fecha), zona)}
-                      {transaccion.fuentes_cuentas ? ` · ${transaccion.fuentes_cuentas.nombre}` : ''}
-                      {transaccion.establecimientos ? ` · ${transaccion.establecimientos.nombre}` : ''}
+                      {!esTransferencia && transaccion.fuentes_cuentas
+                        ? ` · ${transaccion.fuentes_cuentas.nombre}`
+                        : ''}
+                      {!esTransferencia && transaccion.establecimientos
+                        ? ` · ${transaccion.establecimientos.nombre}`
+                        : ''}
                     </p>
 
                     <div className="mt-2 flex flex-wrap items-center gap-1">
@@ -173,7 +197,10 @@ export default function Movimientos() {
                         </button>
                       ) : null}
 
-                      {transaccion.monto_sin_detalle > 0 ? (
+                      {/* Al peso, no a cualquier decimal: un resto de $0,4
+                          mostraba la etiqueta «$0 sin detalle», que no dice
+                          nada y ensucia la fila. */}
+                      {Math.round(transaccion.monto_sin_detalle) > 0 ? (
                         <span className="chip">
                           {formatearCLP(transaccion.monto_sin_detalle)} sin detalle
                         </span>
@@ -202,7 +229,7 @@ export default function Movimientos() {
                       <button
                         type="button"
                         className={`button-ghost px-2 py-1 text-xs ${
-                          confirmando === transaccion.id ? 'bg-rose-50 text-rose-700' : 'text-slate-500'
+                          confirmando === transaccion.id ? 'bg-sale-suave text-sale' : 'text-tinta-3'
                         }`}
                         onClick={() => void pedirBorrado(transaccion.id)}
                         disabled={borrar.isPending}
@@ -213,24 +240,24 @@ export default function Movimientos() {
                     </div>
 
                     {abierta ? (
-                      <ul className="mt-3 space-y-1.5 rounded-2xl bg-slate-50 p-3">
+                      <ul className="mt-3 space-y-1.5 rounded-campo bg-elevado p-3">
                         {items.map((item) => (
                           <li key={item.id} className="flex items-baseline justify-between gap-3 text-sm">
-                            <span className="min-w-0 truncate text-slate-700">
+                            <span className="min-w-0 truncate text-tinta-2">
                               {item.nombre_producto ?? 'Sin nombre'}
                               {item.marca ? (
-                                <span className="text-slate-400"> · {item.marca}</span>
+                                <span className="text-tinta-3"> · {item.marca}</span>
                               ) : null}
                               {Number(item.unidades) > 1 ? (
-                                <span className="text-slate-400"> × {item.unidades}</span>
+                                <span className="text-tinta-3"> × {item.unidades}</span>
                               ) : null}
                               {item.tuvo_descuento ? (
-                                <span className="ml-1 text-emerald-600">
+                                <span className="ml-1 text-entra">
                                   −{item.descuento_porcentaje}%
                                 </span>
                               ) : null}
                             </span>
-                            <span className="shrink-0 tabular-nums text-slate-600">
+                            <span className="shrink-0 tabular-nums text-tinta-2">
                               {formatearCLP(item.total_linea)}
                             </span>
                           </li>

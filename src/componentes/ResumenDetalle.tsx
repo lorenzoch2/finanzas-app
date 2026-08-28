@@ -28,18 +28,18 @@ export default function ResumenDetalle({ control, onUsarTotalDetalle }: Props) {
   const excedido = totalDetalle - totalIngresado > 0.5;
 
   return (
-    <div className="rounded-3xl bg-slate-50 p-4 text-sm">
+    <div className="rounded-tarjeta bg-elevado p-4 text-sm">
       <div className="flex justify-between">
-        <span className="text-slate-600">Suma del detalle</span>
-        <strong className="tabular-nums text-slate-900">{formatearCLP(totalDetalle)}</strong>
+        <span className="text-tinta-2">Suma del detalle</span>
+        <strong className="tabular-nums text-tinta">{formatearCLP(totalDetalle)}</strong>
       </div>
       <div className="mt-1 flex justify-between">
-        <span className="text-slate-600">Total ingresado</span>
-        <strong className="tabular-nums text-slate-900">{formatearCLP(totalIngresado)}</strong>
+        <span className="text-tinta-2">Total ingresado</span>
+        <strong className="tabular-nums text-tinta">{formatearCLP(totalIngresado)}</strong>
       </div>
 
       {excedido ? (
-        <p className="mt-3 text-rose-700">
+        <p className="mt-3 text-sale">
           El detalle supera el total en {formatearCLP(totalDetalle - totalIngresado)}.{' '}
           <button
             type="button"
@@ -50,7 +50,7 @@ export default function ResumenDetalle({ control, onUsarTotalDetalle }: Props) {
           </button>
         </p>
       ) : sobrante > 0.5 ? (
-        <p className="mt-3 text-slate-600">
+        <p className="mt-3 text-tinta-2">
           Quedan {formatearCLP(sobrante)} sin detallar. Se guardarán en la transacción como gasto sin
           detalle, no como un producto inventado.
         </p>

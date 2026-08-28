@@ -48,12 +48,12 @@ export default function Medidor({
   return (
     <div>
       <div className="mb-2 flex items-baseline justify-between gap-3">
-        <span className="text-sm text-slate-600">
+        <span className="text-sm text-tinta-2">
           {formatearCLP(gastado)} de {formatearCLP(limite)}
         </span>
         <span
           className={`text-sm font-semibold tabular-nums ${
-            excedido ? 'text-rose-700' : 'text-slate-700'
+            excedido ? 'text-sale' : 'text-tinta-2'
           }`}
         >
           {Math.round((gastado / limite) * 100)}%
@@ -61,7 +61,7 @@ export default function Medidor({
       </div>
 
       <div
-        className="relative h-4 w-full overflow-hidden rounded-full bg-slate-100"
+        className="relative h-4 w-full overflow-hidden rounded-full bg-elevado"
         role="meter"
         aria-valuenow={Math.round(gastado)}
         aria-valuemin={0}
@@ -70,7 +70,7 @@ export default function Medidor({
       >
         <div
           className={`h-full rounded-full transition-all ${
-            excedido ? 'bg-rose-500' : 'bg-brand-500'
+            excedido ? 'bg-sale' : 'bg-acento'
           }`}
           style={{ width: `${proporcion * 100}%` }}
         />
@@ -81,7 +81,7 @@ export default function Medidor({
         */}
         {esMesEnCurso && posicionRitmo > 0 && posicionRitmo < 1 ? (
           <div
-            className="absolute inset-y-0 w-0.5 bg-slate-400"
+            className="absolute inset-y-0 w-0.5 bg-tinta-3"
             style={{ left: `${posicionRitmo * 100}%` }}
             aria-hidden
           />
@@ -90,15 +90,15 @@ export default function Medidor({
 
       <div className="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs">
         {esMesEnCurso ? (
-          <span className="flex items-center gap-1.5 text-slate-500">
-            <span className="inline-block h-3 w-0.5 bg-slate-400" aria-hidden />
+          <span className="flex items-center gap-1.5 text-tinta-3">
+            <span className="inline-block h-3 w-0.5 bg-tinta-3" aria-hidden />
             Día {diasTranscurridos} de {diasDelMes}
           </span>
         ) : (
-          <span className="text-slate-500">Mes cerrado</span>
+          <span className="text-tinta-3">Mes cerrado</span>
         )}
 
-        <span className={excedido ? 'font-medium text-rose-700' : 'text-slate-500'}>
+        <span className={excedido ? 'font-medium text-sale' : 'text-tinta-3'}>
           {excedido
             ? `${formatearCLP(Math.abs(restante))} por encima`
             : `Quedan ${formatearCLP(restante)}`}
@@ -107,10 +107,10 @@ export default function Medidor({
 
       {esMesEnCurso && proyeccion > 0 ? (
         <p
-          className={`mt-3 rounded-2xl px-3 py-2 text-xs ${
+          className={`mt-3 rounded-campo px-3 py-2 text-xs ${
             proyeccionExcede
-              ? 'bg-rose-50 text-rose-800'
-              : 'bg-emerald-50 text-emerald-800'
+              ? 'bg-sale-suave text-sale'
+              : 'bg-entra-suave text-entra'
           }`}
         >
           {proyeccionExcede ? (

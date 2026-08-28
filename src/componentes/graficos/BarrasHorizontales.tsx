@@ -44,7 +44,7 @@ export default function BarrasHorizontales({ datos, maximo, vacio = 'Sin datos.'
   const [activa, setActiva] = useState<number | null>(null);
 
   if (datos.length === 0) {
-    return <p className="rounded-3xl bg-slate-50 p-6 text-center text-sm text-slate-600">{vacio}</p>;
+    return <p className="rounded-tarjeta bg-elevado p-6 text-center text-sm text-tinta-2">{vacio}</p>;
   }
 
   const tope = maximo ?? Math.max(...datos.map((d) => d.valor), 1);
@@ -65,17 +65,17 @@ export default function BarrasHorizontales({ datos, maximo, vacio = 'Sin datos.'
             onFocus={() => setActiva(indice)}
             onBlur={() => setActiva(null)}
             tabIndex={0}
-            className="rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
+            className="rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-acento"
           >
             <div className="mb-1 flex items-baseline justify-between gap-3">
-              <span className="min-w-0 truncate text-sm text-slate-700">{barra.etiqueta}</span>
+              <span className="min-w-0 truncate text-sm text-tinta-2">{barra.etiqueta}</span>
               {/* Etiqueta directa: el valor no se deduce midiendo la barra. */}
-              <span className="shrink-0 text-sm font-semibold tabular-nums text-slate-900">
+              <span className="shrink-0 text-sm font-semibold tabular-nums text-tinta">
                 {formatearCLP(barra.valor)}
               </span>
             </div>
 
-            <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
+            <div className="h-2.5 w-full overflow-hidden rounded-full bg-elevado">
               <div
                 className="h-full rounded-full transition-all"
                 style={{
@@ -87,7 +87,7 @@ export default function BarrasHorizontales({ datos, maximo, vacio = 'Sin datos.'
             </div>
 
             {resaltada || barra.detalle ? (
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-tinta-3">
                 {porcentaje.toFixed(1)}% del total
                 {barra.detalle ? ` · ${barra.detalle}` : ''}
               </p>

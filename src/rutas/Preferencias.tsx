@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Clock, LogOut, Store, Target, Trash2, User } from 'lucide-react';
+import { Clock, LogOut, Palette, Store, Target, Trash2, User } from 'lucide-react';
 import { useSesion } from '@/auth/SesionProvider';
+import SelectorTema from '@/componentes/SelectorTema';
 import {
   TIPOS_ESTABLECIMIENTO,
   etiquetaTipo,
@@ -74,20 +75,20 @@ export default function Preferencias() {
       {/* --------------------------------------------------- Presupuesto */}
       <div className="card p-5 sm:p-6">
         <div className="mb-4 flex items-center gap-2">
-          <Target size={18} className="text-slate-400" aria-hidden />
-          <h2 className="text-lg font-bold text-slate-900">Límite de gasto mensual</h2>
+          <Target size={18} className="text-tinta-3" aria-hidden />
+          <h2 className="text-lg font-bold text-tinta">Límite de gasto mensual</h2>
         </div>
 
-        <p className="mb-4 text-sm text-slate-600">
+        <p className="mb-4 text-sm text-tinta-2">
           Es un monto fijo, no un porcentaje de lo que entra. Por eso un traspaso entre tus cuentas o
           un ingreso fuera de lo normal no lo mueven: la referencia sigue siendo la misma justo el mes
           en que más falta hace.
         </p>
 
         {limiteActual > 0 ? (
-          <div className="mb-4 rounded-2xl bg-brand-50 px-4 py-3 text-sm">
-            <span className="text-slate-600">Límite vigente para {formatearMes(mes)}: </span>
-            <strong className="text-brand-900">{formatearCLP(limiteActual)}</strong>
+          <div className="mb-4 rounded-campo bg-acento-suave px-4 py-3 text-sm">
+            <span className="text-tinta-2">Límite vigente para {formatearMes(mes)}: </span>
+            <strong className="text-acento">{formatearCLP(limiteActual)}</strong>
           </div>
         ) : null}
 
@@ -115,7 +116,7 @@ export default function Preferencias() {
           </button>
         </form>
 
-        <p className="mt-3 text-xs text-slate-500">
+        <p className="mt-3 text-xs text-tinta-3">
           Se aplica desde {formatearMes(mes)}. Los meses anteriores conservan el límite que regía
           entonces, para que las comparaciones pasadas sigan siendo honestas.
         </p>
@@ -124,11 +125,11 @@ export default function Preferencias() {
       {/* ----------------------------------------------- Establecimientos */}
       <div className="card p-5 sm:p-6">
         <div className="mb-4 flex items-center gap-2">
-          <Store size={18} className="text-slate-400" aria-hidden />
-          <h2 className="text-lg font-bold text-slate-900">Establecimientos</h2>
+          <Store size={18} className="text-tinta-3" aria-hidden />
+          <h2 className="text-lg font-bold text-tinta">Establecimientos</h2>
         </div>
 
-        <p className="mb-4 text-sm text-slate-600">
+        <p className="mb-4 text-sm text-tinta-2">
           Registrar dónde compras es lo que permite comparar precios entre locales.
         </p>
 
@@ -157,20 +158,20 @@ export default function Preferencias() {
         </form>
 
         {(establecimientos.data ?? []).length === 0 ? (
-          <p className="rounded-2xl bg-slate-50 p-4 text-center text-sm text-slate-600">
+          <p className="rounded-campo bg-elevado p-4 text-center text-sm text-tinta-2">
             Todavía no registras ningún local.
           </p>
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-borde-suave">
             {establecimientos.data?.map((local) => (
               <li key={local.id} className="flex items-center justify-between gap-3 py-2.5">
                 <div className="min-w-0">
-                  <p className="truncate font-medium text-slate-800">{local.nombre}</p>
-                  <p className="text-xs text-slate-500">{etiquetaTipo(local.tipo)}</p>
+                  <p className="truncate font-medium text-tinta">{local.nombre}</p>
+                  <p className="text-xs text-tinta-3">{etiquetaTipo(local.tipo)}</p>
                 </div>
                 <button
                   type="button"
-                  className="button-ghost px-2 py-1 text-slate-400 hover:text-rose-600"
+                  className="button-ghost px-2 py-1 text-tinta-3 hover:text-sale"
                   onClick={() => void borrarEstablecimiento.mutateAsync(local.id)}
                   aria-label={`Borrar ${local.nombre}`}
                 >
@@ -181,19 +182,31 @@ export default function Preferencias() {
           </ul>
         )}
 
-        <p className="mt-3 text-xs text-slate-500">
+        <p className="mt-3 text-xs text-tinta-3">
           Borrar un local no borra sus compras: quedan sin establecimiento.
         </p>
+      </div>
+
+      {/* -------------------------------------------------------- Tema */}
+      <div className="card p-5 sm:p-6">
+        <div className="mb-4 flex items-center gap-2">
+          <Palette size={18} className="text-tinta-3" aria-hidden />
+          <h2 className="text-lg font-bold text-tinta">Apariencia</h2>
+        </div>
+        <p className="mb-4 text-sm text-tinta-2">
+          En automático sigue a tu sistema y cambia sola al anochecer.
+        </p>
+        <SelectorTema />
       </div>
 
       {/* ------------------------------------------------- Zona horaria */}
       <div className="card p-5 sm:p-6">
         <div className="mb-4 flex items-center gap-2">
-          <Clock size={18} className="text-slate-400" aria-hidden />
-          <h2 className="text-lg font-bold text-slate-900">Zona horaria</h2>
+          <Clock size={18} className="text-tinta-3" aria-hidden />
+          <h2 className="text-lg font-bold text-tinta">Zona horaria</h2>
         </div>
 
-        <p className="mb-4 text-sm text-slate-600">
+        <p className="mb-4 text-sm text-tinta-2">
           Define en qué momento empieza y termina cada día y cada mes. Con la zona equivocada, un
           gasto de las 23:30 puede quedar contado en el día siguiente.
         </p>
@@ -209,18 +222,18 @@ export default function Preferencias() {
           ) : null}
         </select>
 
-        <dl className="mt-4 space-y-1 rounded-2xl bg-slate-50 p-4 text-sm">
+        <dl className="mt-4 space-y-1 rounded-campo bg-elevado p-4 text-sm">
           <div className="flex justify-between gap-3">
-            <dt className="text-slate-600">Ahora aquí</dt>
-            <dd className="font-medium text-slate-900">{formatearFechaHora(ahora, zona)}</dd>
+            <dt className="text-tinta-2">Ahora aquí</dt>
+            <dd className="font-medium text-tinta">{formatearFechaHora(ahora, zona)}</dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-slate-600">Mes activo</dt>
-            <dd className="font-medium text-slate-900">{mesActual(zona, ahora)}</dd>
+            <dt className="text-tinta-2">Mes activo</dt>
+            <dd className="font-medium text-tinta">{mesActual(zona, ahora)}</dd>
           </div>
         </dl>
 
-        <p className="mt-3 text-xs text-slate-500">
+        <p className="mt-3 text-xs text-tinta-3">
           La preferencia se guarda en este dispositivo, no en la cuenta.
         </p>
       </div>
@@ -228,10 +241,10 @@ export default function Preferencias() {
       {/* ------------------------------------------------------- Cuenta */}
       <div className="card p-5 sm:p-6">
         <div className="mb-4 flex items-center gap-2">
-          <User size={18} className="text-slate-400" aria-hidden />
-          <h2 className="text-lg font-bold text-slate-900">Cuenta</h2>
+          <User size={18} className="text-tinta-3" aria-hidden />
+          <h2 className="text-lg font-bold text-tinta">Cuenta</h2>
         </div>
-        <p className="text-sm text-slate-600">{usuario?.email}</p>
+        <p className="text-sm text-tinta-2">{usuario?.email}</p>
         <button type="button" className="button-secondary mt-4" onClick={() => void cerrarSesion()}>
           <LogOut size={16} aria-hidden /> Cerrar sesión
         </button>

@@ -15,7 +15,7 @@ export default function SelectorMes() {
   const esFuturo = mes >= hoy;
 
   return (
-    <div className="flex items-center gap-0.5 rounded-2xl border border-slate-200 bg-white px-1 py-1">
+    <div className="flex items-center gap-0.5 rounded-campo border border-borde bg-tarjeta px-1 py-1">
       <button
         type="button"
         className="button-ghost px-2 py-1.5"
@@ -28,7 +28,7 @@ export default function SelectorMes() {
       <button
         type="button"
         onClick={() => setMes(hoy)}
-        className="min-w-[6.5rem] px-1 text-center text-xs font-semibold text-slate-700 capitalize"
+        className="min-w-[6.5rem] px-1 text-center text-xs font-semibold text-tinta-2"
         title="Volver al mes actual"
       >
         {formatearMes(mes)}

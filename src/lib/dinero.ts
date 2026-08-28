@@ -20,8 +20,15 @@ const FORMATO_CLP = new Intl.NumberFormat('es-CL', {
   maximumFractionDigits: 0,
 });
 
-export const formatearCLP = (valor: number | string | null | undefined): string =>
-  FORMATO_CLP.format(aNumero(valor));
+export const formatearCLP = (valor: number | string | null | undefined): string => {
+  const n = aNumero(valor);
+
+  // Intl deja el signo pegado al simbolo: «$-188.483». El menos va delante,
+  // y con el signo tipografico (U+2212), que se alinea con los digitos en vez
+  // de quedar a media altura como el guion del teclado.
+  if (n < 0) return `−${FORMATO_CLP.format(Math.abs(n))}`;
+  return FORMATO_CLP.format(n);
+};
 
 export const aNumero = (valor: number | string | null | undefined): number => {
   const n = Number(valor ?? 0);

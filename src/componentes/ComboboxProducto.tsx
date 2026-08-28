@@ -107,11 +107,11 @@ export default function ComboboxProducto({
 
         <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2">
           {productoId ? (
-            <Check size={16} className="text-emerald-600" aria-label="Del catálogo" />
+            <Check size={16} className="text-entra" aria-label="Del catálogo" />
           ) : esNuevo ? (
-            <Plus size={16} className="text-brand-500" aria-label="Producto nuevo" />
+            <Plus size={16} className="text-acento" aria-label="Producto nuevo" />
           ) : (
-            <Package size={16} className="text-slate-300" aria-hidden />
+            <Package size={16} className="text-tinta-3" aria-hidden />
           )}
         </span>
       </div>
@@ -120,7 +120,7 @@ export default function ComboboxProducto({
         <ul
           id={`${idCampo}-lista`}
           role="listbox"
-          className="absolute z-30 mt-1 max-h-60 w-full overflow-auto rounded-2xl border border-slate-200 bg-white py-1 shadow-soft"
+          className="absolute z-30 mt-1 max-h-60 w-full overflow-auto rounded-campo border border-borde bg-tarjeta py-1 shadow-soft"
         >
           {sugerencias.map((producto, indice) => (
             <li key={producto.id}>
@@ -129,7 +129,7 @@ export default function ComboboxProducto({
                 role="option"
                 aria-selected={indice === resaltado}
                 className={`flex w-full items-baseline justify-between gap-2 px-4 py-2.5 text-left text-sm ${
-                  indice === resaltado ? 'bg-brand-50 text-brand-900' : 'text-slate-700'
+                  indice === resaltado ? 'bg-acento-suave text-acento' : 'text-tinta-2'
                 }`}
                 // onMouseDown, no onClick: el blur del input dispara antes que
                 // el click y cerraria la lista sin llegar a elegir nada.
@@ -141,7 +141,7 @@ export default function ComboboxProducto({
               >
                 <span className="min-w-0 truncate">{producto.nombre}</span>
                 {producto.marca || producto.contenido_cantidad ? (
-                  <span className="shrink-0 text-xs text-slate-400">
+                  <span className="shrink-0 text-xs text-tinta-3">
                     {[
                       producto.marca,
                       producto.contenido_cantidad
@@ -160,7 +160,7 @@ export default function ComboboxProducto({
       ) : null}
 
       {esNuevo ? (
-        <p className="mt-1 text-xs text-brand-600">Producto nuevo: se añadirá al catálogo.</p>
+        <p className="mt-1 text-xs text-acento">Producto nuevo: se añadirá al catálogo.</p>
       ) : null}
     </div>
   );

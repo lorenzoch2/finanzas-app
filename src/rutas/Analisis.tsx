@@ -42,11 +42,11 @@ function Seccion({
     <section className="card p-5 sm:p-6">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">
+          <h2 className="flex items-center gap-2 text-lg font-bold text-tinta">
             {icono}
             {titulo}
           </h2>
-          {descripcion ? <p className="mt-1 text-sm text-slate-500">{descripcion}</p> : null}
+          {descripcion ? <p className="mt-1 text-sm text-tinta-3">{descripcion}</p> : null}
         </div>
         {accion}
       </div>
@@ -124,7 +124,7 @@ export default function Analisis() {
   if (cargando) {
     return (
       <div className="flex items-center justify-center py-16">
-        <Loader2 className="animate-spin text-brand-500" size={28} aria-label="Cargando" />
+        <Loader2 className="animate-spin text-acento" size={28} aria-label="Cargando" />
       </div>
     );
   }
@@ -134,14 +134,14 @@ export default function Analisis() {
   if (errorCarga && faltaMigracion(errorCarga)) {
     return (
       <div className="card p-6 text-center">
-        <TriangleAlert size={24} className="mx-auto mb-3 text-amber-500" aria-hidden />
-        <h2 className="text-lg font-bold text-slate-900">Falta aplicar una migración</h2>
-        <p className="mx-auto mt-2 max-w-md text-sm text-slate-600">
+        <TriangleAlert size={24} className="mx-auto mb-3 text-alerta" aria-hidden />
+        <h2 className="text-lg font-bold text-tinta">Falta aplicar una migración</h2>
+        <p className="mx-auto mt-2 max-w-md text-sm text-tinta-2">
           Esta pantalla necesita las funciones de análisis, que se crean con la migración{' '}
-          <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">0016_analisis</code>. Pégala
+          <code className="rounded bg-elevado px-1.5 py-0.5 text-xs">0016_analisis</code>. Pégala
           en el editor SQL de Supabase y vuelve aquí.
         </p>
-        <p className="mt-3 text-xs text-slate-500">
+        <p className="mt-3 text-xs text-tinta-3">
           Solo crea funciones de lectura: no toca ni una fila de tus datos.
         </p>
       </div>
@@ -176,7 +176,7 @@ export default function Analisis() {
         </Seccion>
       ) : (
         <div className="card flex flex-wrap items-center justify-between gap-3 p-5">
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-tinta-2">
             Define un límite mensual y verás aquí tu avance y la proyección de cierre.
           </p>
           <Link to="/preferencias" className="button-secondary">
@@ -188,9 +188,9 @@ export default function Analisis() {
       <Seccion
         titulo="En qué se te va la plata"
         descripcion={`Gasto de ${formatearMes(mes)}, de mayor a menor.`}
-        icono={<Tag size={18} className="text-slate-400" aria-hidden />}
+        icono={<Tag size={18} className="text-tinta-3" aria-hidden />}
         accion={
-          <div className="flex shrink-0 rounded-2xl border border-slate-200 bg-slate-50 p-1 text-xs">
+          <div className="flex shrink-0 rounded-campo border border-borde bg-elevado p-1 text-xs">
             {(['categoria', 'subcategoria'] as const).map((n) => (
               <button
                 key={n}
@@ -198,7 +198,7 @@ export default function Analisis() {
                 onClick={() => setNivel(n)}
                 aria-pressed={nivel === n}
                 className={`rounded-xl px-3 py-1.5 font-medium transition ${
-                  nivel === n ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500'
+                  nivel === n ? 'bg-tarjeta text-acento shadow-sm' : 'text-tinta-3'
                 }`}
               >
                 {n === 'categoria' ? 'Categoría' : 'Detalle'}
@@ -216,7 +216,7 @@ export default function Analisis() {
           conclusiones sobre una parte del dinero creyendo que es el todo.
         */}
         {barrasCategoria.some((b) => b.etiqueta === 'Sin detalle') ? (
-          <p className="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-xs text-slate-600">
+          <p className="mt-4 rounded-campo bg-elevado px-4 py-3 text-xs text-tinta-2">
             <strong>Sin detalle</strong> es lo que registraste sin desglosar ítem por ítem. Aparece
             para que el gráfico sume el total real del mes; a medida que detalles tus boletas, esa
             barra se reparte entre las demás.
@@ -227,7 +227,7 @@ export default function Analisis() {
       <Seccion
         titulo="Cómo evoluciona"
         descripcion="Últimos doce meses. La línea discontinua es tu límite."
-        icono={<TrendingUp size={18} className="text-slate-400" aria-hidden />}
+        icono={<TrendingUp size={18} className="text-tinta-3" aria-hidden />}
       >
         <LineaMeses
           datos={(evolucion.data ?? []).map((p) => ({
@@ -242,7 +242,7 @@ export default function Analisis() {
       <Seccion
         titulo="Dónde compras"
         descripcion="Cuánto se lleva cada establecimiento este mes."
-        icono={<Store size={18} className="text-slate-400" aria-hidden />}
+        icono={<Store size={18} className="text-tinta-3" aria-hidden />}
       >
         <BarrasHorizontales
           datos={barrasEstablecimiento}
@@ -254,7 +254,7 @@ export default function Analisis() {
         <Seccion
           titulo="Lo que te ahorraste"
           descripcion={`${formatearCLP(totalAhorrado)} en descuentos durante ${formatearMes(mes)}.`}
-          icono={<TicketPercent size={18} className="text-slate-400" aria-hidden />}
+          icono={<TicketPercent size={18} className="text-tinta-3" aria-hidden />}
         >
           <BarrasHorizontales
             datos={(ahorro.data ?? []).map((a) => ({
@@ -271,33 +271,33 @@ export default function Analisis() {
         descripcion="Los diez que más se llevan este mes."
       >
         {(ranking.data ?? []).length === 0 ? (
-          <p className="rounded-3xl bg-slate-50 p-6 text-center text-sm text-slate-600">
+          <p className="rounded-tarjeta bg-elevado p-6 text-center text-sm text-tinta-2">
             Detalla tus boletas ítem por ítem y aquí verás qué productos concretos pesan más.
           </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-100 text-left text-xs text-slate-500">
+                <tr className="border-b border-borde-suave text-left text-xs text-tinta-3">
                   <th className="py-2 pr-3 font-medium">Producto</th>
                   <th className="py-2 pr-3 text-right font-medium">Veces</th>
                   <th className="py-2 text-right font-medium">Total</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-borde-suave">
                 {(ranking.data ?? []).map((p) => (
                   <tr key={`${p.producto}-${p.marca ?? ''}`}>
                     <td className="py-2 pr-3">
-                      <span className="text-slate-800">{p.producto}</span>
-                      {p.marca ? <span className="text-slate-400"> · {p.marca}</span> : null}
+                      <span className="text-tinta">{p.producto}</span>
+                      {p.marca ? <span className="text-tinta-3"> · {p.marca}</span> : null}
                       {p.calificacion ? (
-                        <span className="ml-1 text-amber-500">
+                        <span className="ml-1 text-alerta">
                           {'★'.repeat(Math.round(Number(p.calificacion)))}
                         </span>
                       ) : null}
                     </td>
-                    <td className="py-2 pr-3 text-right tabular-nums text-slate-500">{p.veces}</td>
-                    <td className="py-2 text-right font-medium tabular-nums text-slate-900">
+                    <td className="py-2 pr-3 text-right tabular-nums text-tinta-3">{p.veces}</td>
+                    <td className="py-2 text-right font-medium tabular-nums text-tinta">
                       {formatearCLP(p.total)}
                     </td>
                   </tr>

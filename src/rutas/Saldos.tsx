@@ -68,8 +68,8 @@ export default function Saldos() {
       {error ? <p className="mensaje-error">{error}</p> : null}
 
       <div className="card p-5 sm:p-6">
-        <h2 className="text-lg font-bold text-slate-900">Cómo funcionan los saldos</h2>
-        <div className="mt-3 rounded-3xl bg-slate-50 p-4 text-sm text-slate-600">
+        <h2 className="text-lg font-bold text-tinta">Cómo funcionan los saldos</h2>
+        <div className="mt-3 rounded-tarjeta bg-elevado p-4 text-sm text-tinta-2">
           <ol className="space-y-2">
             <li>1. Los movimientos registran ingresos y egresos sobre cada fuente.</li>
             <li>2. Un ajuste manual corta la línea temporal: declara cuánto había en esa fecha.</li>
@@ -79,24 +79,24 @@ export default function Saldos() {
       </div>
 
       <div className="card p-5 sm:p-6">
-        <h2 className="mb-4 text-lg font-bold text-slate-900">Fuentes</h2>
+        <h2 className="mb-4 text-lg font-bold text-tinta">Fuentes</h2>
 
         <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {saldos.data?.map((fuente) => (
             <div
               key={fuente.fuente_id}
-              className={`rounded-3xl border p-4 ${
+              className={`rounded-tarjeta border p-4 ${
                 fuente.es_principal
-                  ? 'border-brand-200 bg-brand-50/60'
-                  : 'border-slate-200 bg-slate-50/80'
+                  ? 'border-acento-borde bg-acento-suave'
+                  : 'border-borde bg-elevado'
               }`}
             >
               <div className="flex items-center justify-between gap-2">
-                <h3 className="truncate font-semibold text-slate-900">{fuente.nombre}</h3>
-                <span className="chip shrink-0 bg-white">{fuente.tipo}</span>
+                <h3 className="truncate font-semibold text-tinta">{fuente.nombre}</h3>
+                <span className="chip shrink-0 bg-tarjeta">{fuente.tipo}</span>
               </div>
 
-              <p className="mt-2 text-xl font-black tabular-nums text-slate-900">
+              <p className="mt-2 text-xl font-black tabular-nums text-tinta">
                 {formatearCLP(fuente.saldo_actual)}
               </p>
 
@@ -109,7 +109,7 @@ export default function Saldos() {
               <button
                 type="button"
                 className={`mt-3 inline-flex items-center gap-1.5 text-xs font-medium ${
-                  fuente.es_principal ? 'text-brand-700' : 'text-slate-400 hover:text-slate-600'
+                  fuente.es_principal ? 'text-acento' : 'text-tinta-3 hover:text-tinta-2'
                 }`}
                 onClick={() => {
                   if (!fuente.es_principal) marcarPrincipal.mutate(fuente.fuente_id);
@@ -120,7 +120,7 @@ export default function Saldos() {
                 <Star
                   size={14}
                   aria-hidden
-                  className={fuente.es_principal ? 'fill-brand-500 text-brand-500' : ''}
+                  className={fuente.es_principal ? 'fill-acento text-acento' : ''}
                 />
                 {fuente.es_principal ? 'Cuenta principal' : 'Hacer principal'}
               </button>
@@ -160,7 +160,7 @@ export default function Saldos() {
       <FormularioTransferencia />
 
       <div className="card p-5 sm:p-6">
-        <h2 className="mb-4 text-lg font-bold text-slate-900">Ajustes de saldo</h2>
+        <h2 className="mb-4 text-lg font-bold text-tinta">Ajustes de saldo</h2>
 
         <form onSubmit={(e) => void enviarAjuste(e)} className="mb-5 grid gap-3 sm:grid-cols-2">
           <select
@@ -212,31 +212,31 @@ export default function Saldos() {
         </form>
 
         {ajustes.isPending ? (
-          <p className="text-sm text-slate-500">Cargando ajustes…</p>
+          <p className="text-sm text-tinta-3">Cargando ajustes…</p>
         ) : ajustes.data?.length === 0 ? (
-          <p className="rounded-3xl bg-slate-50 p-6 text-center text-sm text-slate-600">
+          <p className="rounded-tarjeta bg-elevado p-6 text-center text-sm text-tinta-2">
             Aún no hay ajustes registrados.
           </p>
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-borde-suave">
             {ajustes.data?.map((registro) => (
               <li key={registro.id} className="flex items-center justify-between gap-3 py-3">
                 <div className="min-w-0">
-                  <p className="truncate font-medium text-slate-900">
+                  <p className="truncate font-medium text-tinta">
                     {registro.fuentes_cuentas?.nombre ?? 'Fuente eliminada'}
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-tinta-3">
                     Desde {formatearFechaSola(registro.fecha_referencia)}
                     {registro.nota ? ` · ${registro.nota}` : ''}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <strong className="tabular-nums text-slate-900">
+                  <strong className="tabular-nums text-tinta">
                     {formatearCLP(registro.monto_ajustado)}
                   </strong>
                   <button
                     type="button"
-                    className="button-ghost px-2 py-1 text-slate-400 hover:text-rose-600"
+                    className="button-ghost px-2 py-1 text-tinta-3 hover:text-sale"
                     onClick={() => void borrarAjuste.mutateAsync(registro.id)}
                     aria-label="Borrar ajuste"
                   >

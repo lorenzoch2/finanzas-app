@@ -1,35 +1,146 @@
 @import 'tailwindcss';
 
 /**
- * Tailwind v4 configura el tema desde CSS, no desde tailwind.config.js.
- * La paleta `brand` y la sombra `soft` son las mismas de la versión anterior:
- * la app debe seguir pareciéndose a la tuya.
+ * Tipografía.
+ *
+ * Antes se declaraba Inter pero nunca se cargaba, así que lo que se veía era
+ * la del sistema. Ahora va auto-alojada: 48 kB del subconjunto latino, que el
+ * service worker cachea. Depender de Google Fonts en una PWA offline sería
+ * volver a lo mismo el día que no haya red.
  */
-@theme {
-  --color-brand-50: #eef6ff;
-  --color-brand-100: #d9ebff;
-  --color-brand-200: #b9dcff;
-  --color-brand-300: #86c4ff;
-  --color-brand-400: #4fa6ff;
-  --color-brand-500: #2d87ff;
-  --color-brand-600: #1669ef;
-  --color-brand-700: #1551c2;
-  --color-brand-800: #184497;
-  --color-brand-900: #193b78;
-
-  --shadow-soft: 0 12px 40px rgba(15, 23, 42, 0.1);
-
-  --font-sans:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+  src: url('/fuentes/inter-latin.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
-:root {
+/**
+ * Paleta.
+ *
+ * Neutros dominantes y el azul reservado para lo accionable. Antes el azul
+ * estaba en el fondo, en los títulos, en los bordes y en los botones a la vez,
+ * con lo que dejaba de señalar nada.
+ *
+ * Los tonos oscuros son propios, no una inversión automática: un blanco
+ * invertido da un gris sucio y los colores saturados vibran sobre negro.
+ */
+@theme {
+  /* Superficies */
+  --color-fondo: #f6f6f5;
+  --color-tarjeta: #ffffff;
+  --color-elevado: #fafafa;
+  --color-borde: #e6e6e4;
+  --color-borde-suave: #efefed;
+
+  /* Texto */
+  --color-tinta: #18181b;
+  --color-tinta-2: #52525b;
+  --color-tinta-3: #8f8f97;
+
+  /* Acento */
+  --color-acento: #1669ef;
+  --color-acento-fuerte: #1551c2;
+  --color-acento-suave: #eaf1fe;
+  --color-acento-borde: #c9ddfc;
+
+  /* Semánticos del dinero */
+  --color-entra: #0d9668;
+  --color-entra-suave: #e7f6f0;
+  --color-sale: #d4384a;
+  --color-sale-suave: #fdecee;
+  --color-alerta: #b45309;
+  --color-alerta-suave: #fdf3e7;
+
+  --shadow-suave: 0 1px 2px rgba(24, 24, 27, 0.04), 0 4px 16px rgba(24, 24, 27, 0.05);
+  --shadow-alzada: 0 2px 4px rgba(24, 24, 27, 0.06), 0 12px 32px rgba(24, 24, 27, 0.08);
+
+  --radius-tarjeta: 1rem;
+  --radius-campo: 0.75rem;
+
+  --font-sans:
+    Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+/**
+ * Modo oscuro.
+ *
+ * Se declara bajo los dos ámbitos a propósito: la media query cubre la
+ * preferencia del sistema y `[data-theme]` la elección explícita, que debe
+ * ganar en ambos sentidos. El `:not()` permite que una elección clara venza a
+ * un sistema en oscuro.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='claro']) {
+    --color-fondo: #131417;
+    --color-tarjeta: #1b1d22;
+    --color-elevado: #22252b;
+    --color-borde: #2b2f36;
+    --color-borde-suave: #23262c;
+
+    --color-tinta: #ededef;
+    --color-tinta-2: #a5a5ad;
+    --color-tinta-3: #71717a;
+
+    --color-acento: #4d9bff;
+    --color-acento-fuerte: #7ab4ff;
+    --color-acento-suave: #16233a;
+    --color-acento-borde: #29405f;
+
+    --color-entra: #34d399;
+    --color-entra-suave: #10231d;
+    --color-sale: #f87171;
+    --color-sale-suave: #2a1618;
+    --color-alerta: #fbbf24;
+    --color-alerta-suave: #2a2114;
+
+    --shadow-suave: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.3);
+    --shadow-alzada: 0 2px 4px rgba(0, 0, 0, 0.5), 0 12px 32px rgba(0, 0, 0, 0.45);
+
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme='oscuro'] {
+  --color-fondo: #131417;
+  --color-tarjeta: #1b1d22;
+  --color-elevado: #22252b;
+  --color-borde: #2b2f36;
+  --color-borde-suave: #23262c;
+
+  --color-tinta: #ededef;
+  --color-tinta-2: #a5a5ad;
+  --color-tinta-3: #71717a;
+
+  --color-acento: #4d9bff;
+  --color-acento-fuerte: #7ab4ff;
+  --color-acento-suave: #16233a;
+  --color-acento-borde: #29405f;
+
+  --color-entra: #34d399;
+  --color-entra-suave: #10231d;
+  --color-sale: #f87171;
+  --color-sale-suave: #2a1618;
+  --color-alerta: #fbbf24;
+  --color-alerta-suave: #2a2114;
+
+  --shadow-suave: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.3);
+  --shadow-alzada: 0 2px 4px rgba(0, 0, 0, 0.5), 0 12px 32px rgba(0, 0, 0, 0.45);
+
+  color-scheme: dark;
+}
+
+:root[data-theme='claro'] {
   color-scheme: light;
 }
 
 html {
   scroll-behavior: smooth;
-  /* Evita el zoom automático de iOS al enfocar un input de menos de 16px. */
   -webkit-text-size-adjust: 100%;
 }
 
@@ -37,11 +148,12 @@ body {
   margin: 0;
   min-width: 320px;
   font-family: var(--font-sans);
-  background:
-    radial-gradient(circle at top, rgba(45, 135, 255, 0.14), transparent 34%),
-    linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%);
-  background-attachment: fixed;
-  color: #0f172a;
+  /* Fondo plano. El degradado azul anterior no aportaba y envejecía el
+     conjunto; el color de superficie ya separa el fondo de las tarjetas. */
+  background-color: var(--color-fondo);
+  color: var(--color-tinta);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'cv05' 1; /* la 'l' con cola de Inter, más legible */
 }
 
 #root {
@@ -54,43 +166,54 @@ body {
   box-sizing: border-box;
 }
 
-/* La barra inferior se apoya en el área segura de los teléfonos con notch. */
+/**
+ * Cifras tabulares en TODO el dinero.
+ *
+ * Sin esto, cada dígito tiene su propio ancho y las columnas de montos bailan
+ * al cambiar de mes: $60.674 y $381.152 no alinean sus unidades. En una app
+ * cuyo contenido son números, es la diferencia entre leer y descifrar.
+ */
+.tabular-nums,
+.cifra {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1, 'cv05' 1;
+}
+
 @supports (padding: env(safe-area-inset-bottom)) {
   .safe-bottom {
     padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
   }
 }
 
-/**
- * En Tailwind v4, `@apply` solo acepta utilidades reales: no se puede aplicar
- * una clase de componente definida por uno mismo. Como las variantes de botón
- * comparten una base, esa base se declara con `@utility`, que sí es aplicable.
- */
 @utility button-base {
-  @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold
-         transition select-none
-         disabled:cursor-not-allowed disabled:opacity-50;
+  @apply inline-flex items-center justify-center gap-2 rounded-campo px-4 py-2.5
+         text-sm font-medium transition select-none
+         disabled:cursor-not-allowed disabled:opacity-45;
 }
 
 @layer components {
   .card {
-    @apply rounded-3xl border border-slate-200/80 bg-white/90 shadow-soft backdrop-blur;
+    /* Radio más contenido que antes: a 24px las tarjetas grandes se veían
+       blandas. Y borde en vez de solo sombra, que en oscuro es lo único que
+       las separa del fondo. */
+    @apply rounded-tarjeta border border-borde bg-tarjeta shadow-suave;
   }
 
   .label {
-    @apply text-sm font-medium text-slate-700;
+    @apply text-[13px] font-medium text-tinta-2;
   }
 
   .input {
     /* text-base (16px) a propósito: con menos, iOS hace zoom al enfocar. */
-    @apply w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base outline-none
-           transition placeholder:text-slate-400
-           focus:border-brand-400 focus:ring-4 focus:ring-brand-100
-           disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400;
+    @apply w-full rounded-campo border border-borde bg-tarjeta px-3.5 py-2.5
+           text-base text-tinta outline-none transition
+           placeholder:text-tinta-3
+           focus:border-acento focus:ring-4 focus:ring-acento-suave
+           disabled:cursor-not-allowed disabled:bg-elevado disabled:text-tinta-3;
   }
 
   .input-error {
-    @apply border-rose-300 focus:border-rose-400 focus:ring-rose-100;
+    @apply border-sale focus:border-sale focus:ring-sale-suave;
   }
 
   .button {
@@ -98,31 +221,38 @@ body {
   }
 
   .button-primary {
-    @apply button-base bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800;
+    @apply button-base bg-acento text-white hover:bg-acento-fuerte;
   }
 
   .button-secondary {
-    @apply button-base border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-100;
+    @apply button-base border border-borde bg-tarjeta text-tinta hover:bg-elevado;
   }
 
   .button-ghost {
-    @apply button-base text-slate-600 hover:bg-slate-100 hover:text-slate-900;
+    @apply button-base text-tinta-2 hover:bg-elevado hover:text-tinta;
   }
 
   .chip {
-    @apply inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600;
+    @apply inline-flex items-center gap-1 rounded-full bg-elevado px-2.5 py-0.5
+           text-xs font-medium text-tinta-2;
   }
 
   .mensaje-error {
-    @apply rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700;
+    @apply rounded-campo border border-sale/30 bg-sale-suave px-4 py-3 text-sm text-sale;
   }
 
   .mensaje-ok {
-    @apply rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700;
+    @apply rounded-campo border border-entra/30 bg-entra-suave px-4 py-3 text-sm text-entra;
+  }
+
+  /* Cifra protagonista: la respuesta a «cuánto tengo». */
+  .cifra-heroe {
+    @apply text-4xl font-extrabold tracking-tight sm:text-5xl;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
   }
 }
 
-/* Respeta a quien pidió menos animación en su sistema. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -30,12 +30,12 @@ function Metrica({
   cargando: boolean;
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl bg-white/70 px-4 py-3">
+    <div className="flex items-center gap-3 rounded-campo bg-tarjeta/70 px-4 py-3">
       <span className={`shrink-0 rounded-xl p-2 ${tono}`}>{icono}</span>
       <div className="min-w-0">
-        <p className="text-xs font-medium text-slate-500">{titulo}</p>
-        <p className="truncate text-lg font-bold tabular-nums text-slate-900">
-          {cargando ? <span className="text-slate-300">—</span> : valor}
+        <p className="text-xs font-medium text-tinta-3">{titulo}</p>
+        <p className="truncate text-lg font-bold tabular-nums text-tinta">
+          {cargando ? <span className="text-tinta-3">—</span> : valor}
         </p>
       </div>
     </div>
@@ -71,41 +71,41 @@ export default function Dashboard() {
 
       {/* Cifra protagonista */}
       <div className="card overflow-hidden">
-        <div className="bg-gradient-to-br from-brand-50 to-white px-5 py-6 sm:px-6">
-          <p className="text-xs font-semibold tracking-wide text-brand-700 uppercase">
+        <div className="px-5 py-6 sm:px-6">
+          <p className="text-xs font-semibold tracking-wide text-acento uppercase">
             Total disponible
           </p>
-          <p className="mt-1 text-4xl font-black tracking-tight tabular-nums text-slate-900 sm:text-5xl">
+          <p className="mt-1 text-4xl font-black tracking-tight tabular-nums text-tinta sm:text-5xl">
             {saldos.isPending ? (
-              <span className="text-slate-300">—</span>
+              <span className="text-tinta-3">—</span>
             ) : (
               formatearCLP(totalDisponible)
             )}
           </p>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-tinta-3">
             Suma de tus {saldos.data?.length ?? 0}{' '}
             {(saldos.data?.length ?? 0) === 1 ? 'cuenta' : 'cuentas'}.
           </p>
         </div>
 
-        <div className="grid gap-2 border-t border-slate-100 p-3 sm:grid-cols-3">
+        <div className="grid gap-2 border-t border-borde-suave p-3 sm:grid-cols-3">
           <Metrica
             icono={<ArrowUpRight size={16} aria-hidden />}
-            tono="bg-emerald-50 text-emerald-600"
+            tono="bg-entra-suave text-entra"
             titulo={`Ingresos de ${formatearMes(mes)}`}
             valor={formatearCLP(resumen.data?.ingresos)}
             cargando={resumen.isPending}
           />
           <Metrica
             icono={<ArrowDownLeft size={16} aria-hidden />}
-            tono="bg-rose-50 text-rose-600"
+            tono="bg-sale-suave text-sale"
             titulo={`Gastos de ${formatearMes(mes)}`}
             valor={formatearCLP(resumen.data?.gastos)}
             cargando={resumen.isPending}
           />
           <Metrica
             icono={<ChartColumn size={16} aria-hidden />}
-            tono={margen >= 0 ? 'bg-brand-50 text-brand-600' : 'bg-amber-50 text-amber-600'}
+            tono={margen >= 0 ? 'bg-acento-suave text-acento' : 'bg-alerta-suave text-alerta'}
             titulo="Margen del mes"
             valor={formatearCLP(margen)}
             cargando={resumen.isPending}
@@ -116,7 +116,7 @@ export default function Dashboard() {
       {/* Presupuesto: lo accionable va arriba, antes del detalle por cuenta. */}
       {presupuesto.data && Number(presupuesto.data.limite) > 0 ? (
         <div className="card p-5 sm:p-6">
-          <h2 className="mb-4 text-lg font-bold text-slate-900">Tu límite del mes</h2>
+          <h2 className="mb-4 text-lg font-bold text-tinta">Tu límite del mes</h2>
           <Medidor
             gastado={Number(presupuesto.data.gastado)}
             limite={Number(presupuesto.data.limite)}
@@ -131,8 +131,8 @@ export default function Dashboard() {
       <div className="card p-5 sm:p-6">
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-bold text-slate-900">Tus cuentas</h2>
-            <p className="mt-1 text-sm text-slate-500">
+            <h2 className="text-lg font-bold text-tinta">Tus cuentas</h2>
+            <p className="mt-1 text-sm text-tinta-3">
               Cada saldo parte del último ajuste manual y suma los movimientos desde esa fecha.
             </p>
           </div>
@@ -142,14 +142,14 @@ export default function Dashboard() {
         </div>
 
         {saldos.isPending ? (
-          <p className="flex items-center gap-2 text-sm text-slate-500">
+          <p className="flex items-center gap-2 text-sm text-tinta-3">
             <Loader2 size={16} className="animate-spin" aria-hidden /> Cargando saldos…
           </p>
         ) : null}
 
         {!saldos.isPending && saldos.data?.length === 0 ? (
-          <div className="rounded-3xl bg-slate-50 p-6 text-center">
-            <p className="text-sm text-slate-600">Todavía no tienes cuentas.</p>
+          <div className="rounded-tarjeta bg-elevado p-6 text-center">
+            <p className="text-sm text-tinta-2">Todavía no tienes cuentas.</p>
             <Link to="/saldos" className="button-primary mt-4">
               Crear la primera
             </Link>
@@ -162,29 +162,29 @@ export default function Dashboard() {
             return (
               <article
                 key={fuente.fuente_id}
-                className={`rounded-3xl border p-4 transition ${
+                className={`rounded-tarjeta border p-4 transition ${
                   fuente.es_principal
-                    ? 'border-brand-200 bg-brand-50/50'
-                    : 'border-slate-200 bg-slate-50/70'
+                    ? 'border-acento-borde bg-acento-suave'
+                    : 'border-borde bg-elevado'
                 }`}
               >
                 <div className="mb-2 flex items-center justify-between gap-2">
-                  <h3 className="flex min-w-0 items-center gap-1.5 font-semibold text-slate-900">
+                  <h3 className="flex min-w-0 items-center gap-1.5 font-semibold text-tinta">
                     {fuente.es_principal ? (
                       <Star
                         size={13}
-                        className="shrink-0 fill-brand-500 text-brand-500"
+                        className="shrink-0 fill-acento text-acento"
                         aria-label="Cuenta principal"
                       />
                     ) : null}
                     <span className="truncate">{fuente.nombre}</span>
                   </h3>
-                  <span className="chip shrink-0 bg-white">{fuente.tipo}</span>
+                  <span className="chip shrink-0 bg-tarjeta">{fuente.tipo}</span>
                 </div>
 
                 <p
                   className={`text-2xl font-black tabular-nums ${
-                    negativo ? 'text-rose-600' : 'text-slate-900'
+                    negativo ? 'text-sale' : 'text-tinta'
                   }`}
                 >
                   {formatearCLP(fuente.saldo_actual)}

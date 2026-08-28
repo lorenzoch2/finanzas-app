@@ -35,7 +35,7 @@ export default function Estrellas({ valor, onCambiar, etiqueta }: Props) {
             <Star
               size={18}
               aria-hidden
-              className={activa ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}
+              className={activa ? 'fill-alerta text-alerta' : 'text-tinta-3'}
             />
           </button>
         );
@@ -45,7 +45,7 @@ export default function Estrellas({ valor, onCambiar, etiqueta }: Props) {
         <button
           type="button"
           onClick={() => onCambiar(null)}
-          className="ml-1 text-xs text-slate-400 underline underline-offset-2"
+          className="ml-1 text-xs text-tinta-3 underline underline-offset-2"
         >
           quitar
         </button>

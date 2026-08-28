@@ -106,7 +106,7 @@ export default function Categorias() {
         <>
           <button
             type="button"
-            className="button-ghost px-2 py-1 text-emerald-600"
+            className="button-ghost px-2 py-1 text-entra"
             onClick={() => void guardarEdicion(categoria)}
             aria-label="Guardar"
           >
@@ -125,7 +125,7 @@ export default function Categorias() {
         <>
           <button
             type="button"
-            className="button-ghost px-2 py-1 text-slate-400"
+            className="button-ghost px-2 py-1 text-tinta-3"
             onClick={() => {
               setEditandoId(categoria.id);
               setNombreEditado(categoria.nombre);
@@ -137,7 +137,7 @@ export default function Categorias() {
           <button
             type="button"
             className={`button-ghost px-2 py-1 ${
-              confirmando === categoria.id ? 'text-rose-700' : 'text-slate-400'
+              confirmando === categoria.id ? 'text-sale' : 'text-tinta-3'
             }`}
             onClick={() => void pedirBorrado(categoria.id)}
             aria-label={`Borrar ${categoria.nombre}`}
@@ -190,18 +190,18 @@ export default function Categorias() {
 
       <div className="card p-5 sm:p-6">
         <div className="mb-4 flex items-baseline justify-between">
-          <h2 className="text-lg font-bold text-slate-900">Categorías</h2>
-          <span className="text-sm text-slate-500">
+          <h2 className="text-lg font-bold text-tinta">Categorías</h2>
+          <span className="text-sm text-tinta-3">
             {principales.length} principales · {categorias.length - principales.length} subcategorías
           </span>
         </div>
 
         {isPending ? (
-          <p className="flex items-center gap-2 text-sm text-slate-500">
+          <p className="flex items-center gap-2 text-sm text-tinta-3">
             <Loader2 size={16} className="animate-spin" aria-hidden /> Cargando…
           </p>
         ) : principales.length === 0 ? (
-          <p className="rounded-3xl bg-slate-50 p-6 text-center text-sm text-slate-600">
+          <p className="rounded-tarjeta bg-elevado p-6 text-center text-sm text-tinta-2">
             Todavía no hay categorías.
           </p>
         ) : (
@@ -211,8 +211,8 @@ export default function Categorias() {
               const abierta = abiertas.has(principal.id);
 
               return (
-                <li key={principal.id} className="overflow-hidden rounded-2xl border border-slate-200">
-                  <div className="flex items-center gap-2 bg-slate-50 px-3 py-2.5">
+                <li key={principal.id} className="overflow-hidden rounded-campo border border-borde">
+                  <div className="flex items-center gap-2 bg-elevado px-3 py-2.5">
                     <button
                       type="button"
                       className="flex min-w-0 flex-1 items-center gap-2 text-left"
@@ -222,7 +222,7 @@ export default function Categorias() {
                       <ChevronDown
                         size={16}
                         aria-hidden
-                        className={`shrink-0 text-slate-400 transition ${abierta ? 'rotate-180' : ''}`}
+                        className={`shrink-0 text-tinta-3 transition ${abierta ? 'rotate-180' : ''}`}
                       />
                       {editandoId === principal.id ? (
                         <input
@@ -233,20 +233,20 @@ export default function Categorias() {
                           autoFocus
                         />
                       ) : (
-                        <span className="truncate font-semibold text-slate-800">
+                        <span className="truncate font-semibold text-tinta">
                           {principal.nombre}
                         </span>
                       )}
-                      <span className="shrink-0 text-xs text-slate-400">{hijas.length}</span>
+                      <span className="shrink-0 text-xs text-tinta-3">{hijas.length}</span>
                     </button>
 
                     <Acciones categoria={principal} />
                   </div>
 
                   {abierta ? (
-                    <ul className="divide-y divide-slate-100 bg-white">
+                    <ul className="divide-y divide-borde-suave bg-tarjeta">
                       {hijas.length === 0 ? (
-                        <li className="px-4 py-3 text-sm text-slate-400">Sin subcategorías.</li>
+                        <li className="px-4 py-3 text-sm text-tinta-3">Sin subcategorías.</li>
                       ) : (
                         hijas.map((hija) => (
                           <li key={hija.id} className="flex items-center gap-2 py-2 pr-3 pl-9">
@@ -263,7 +263,7 @@ export default function Categorias() {
                                   }}
                                 />
                               ) : (
-                                <span className="truncate text-sm text-slate-700">{hija.nombre}</span>
+                                <span className="truncate text-sm text-tinta-2">{hija.nombre}</span>
                               )}
                             </div>
                             <Acciones categoria={hija} />
@@ -278,7 +278,7 @@ export default function Categorias() {
           </ul>
         )}
 
-        <p className="mt-4 text-xs text-slate-500">
+        <p className="mt-4 text-xs text-tinta-3">
           Borrar una categoría arrastra sus subcategorías. Los ítems que la usaban no se borran:
           quedan sin categoría.
         </p>
