@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from '@tanstack/react-router';
-import { Loader2, Store, Tag, TicketPercent, TrendingUp, TriangleAlert } from 'lucide-react';
+import { Loader2, Search, Store, Tag, TicketPercent, TrendingUp, TriangleAlert } from 'lucide-react';
 import {
   faltaMigracion,
   useAhorroDescuentos,
@@ -17,6 +17,7 @@ import { nombrarRango, ultimoDiaDelMes } from '@/lib/rango';
 import BarrasHorizontales from '@/componentes/graficos/BarrasHorizontales';
 import LineaMeses from '@/componentes/graficos/LineaMeses';
 import Medidor from '@/componentes/graficos/Medidor';
+import PrecioProducto from '@/componentes/graficos/PrecioProducto';
 import type { Barra } from '@/componentes/graficos/BarrasHorizontales';
 import AvisoMigracion from '@/componentes/AvisoMigracion';
 
@@ -299,6 +300,19 @@ export default function Analisis() {
           />
         </Seccion>
       ) : null}
+
+      {/*
+        Esta es la razón de ser del catálogo: seguir UN producto en el tiempo y
+        entre locales. El gasto total por establecimiento dice dónde se te va
+        la plata; esto dice si te la están cobrando más cara.
+      */}
+      <Seccion
+        titulo="Cómo cambia el precio de lo que compras"
+        descripcion="Sigue un producto: cuánto ha subido y en qué local sale más barato."
+        icono={<Search size={18} className="text-tinta-3" aria-hidden />}
+      >
+        <PrecioProducto />
+      </Seccion>
 
       <Seccion titulo="Qué productos pesan más" descripcion="Los diez que más se llevan.">
         {(ranking.data ?? []).length === 0 ? (
