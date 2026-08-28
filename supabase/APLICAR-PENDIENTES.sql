@@ -715,10 +715,13 @@ as $$
     having sum(i.total_linea) > 0
   ),
   resto as (
+    -- Los alias son obligatorios: sin ellos las columnas de la CTE no tienen
+    -- nombre y el `where total > 0` de abajo no encuentra a que referirse.
     select
-      'Sin detalle'::text, 'Sin detalle'::text,
-      sum(greatest(t.monto - coalesce(d.suma, 0), 0))::numeric,
-      count(*)::bigint
+      'Sin detalle'::text                                       as categoria_padre,
+      'Sin detalle'::text                                       as categoria,
+      sum(greatest(t.monto - coalesce(d.suma, 0), 0))::numeric  as total,
+      count(*)::bigint                                          as items
     from public.transacciones t
     cross join l
     left join (
