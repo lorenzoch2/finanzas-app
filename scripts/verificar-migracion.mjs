@@ -51,6 +51,14 @@ const supabase = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY,
   auth: { persistSession: false },
 });
 
+/** Ultimo dia de un mes 'YYYY-MM', respetando anos bisiestos. */
+const ultimoDiaDelMes = (mes) => {
+  const [year, month] = mes.split('-').map(Number);
+  const fecha = new Date(Date.UTC(year, month, 0));
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${fecha.getUTCFullYear()}-${pad(fecha.getUTCMonth() + 1)}-${pad(fecha.getUTCDate())}`;
+};
+
 const golden = JSON.parse(readFileSync(join(dir, 'golden-saldos.json'), 'utf8'));
 const zona = golden.zonaHorariaDelProceso ?? 'America/Santiago';
 
@@ -74,8 +82,10 @@ const main = async () => {
   let comparaciones = 0;
 
   for (const mes of golden.meses) {
+    // La 0018 cambio la firma: ahora recibe la fecha de corte, no el mes.
+    // El saldo del mes es el que hay al cerrar su ultimo dia.
     const { data, error } = await supabase.rpc('saldos_por_fuente', {
-      p_mes: `${mes.mes}-01`,
+      p_hasta: ultimoDiaDelMes(mes.mes),
       p_tz: zona,
     });
 
@@ -111,13 +121,14 @@ const main = async () => {
     }
 
     // El resumen mensual también debe cuadrar con lo que calculaba la app vieja.
-    const { data: resumen, error: errorResumen } = await supabase.rpc('resumen_mensual', {
-      p_mes: `${mes.mes}-01`,
+    const { data: resumen, error: errorResumen } = await supabase.rpc('resumen_periodo', {
+      p_desde: `${mes.mes}-01`,
+      p_hasta: ultimoDiaDelMes(mes.mes),
       p_tz: zona,
     });
 
     if (errorResumen) {
-      console.error(`  ${mes.mes}  ERROR al llamar resumen_mensual: ${errorResumen.message}`);
+      console.error(`  ${mes.mes}  ERROR al llamar resumen_periodo: ${errorResumen.message}`);
       fallos += 1;
     } else {
       comparaciones += 1;
