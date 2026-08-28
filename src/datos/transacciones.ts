@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { claves } from '@/lib/query';
 import { mensajeDeError, supabase } from '@/lib/supabase';
-import { rangoDelMes } from '@/lib/fecha';
+import { entradaDateAIso } from '@/lib/fecha';
 import { encolar, esFalloDeRed, leerCola, quitarDeCola } from '@/lib/colaOffline';
 import type { Json, TipoTransaccion, TransaccionConDetalle } from '@/lib/database.types';
 
@@ -39,6 +39,15 @@ export interface TransaccionFormulario {
   monto_sin_detalle: number;
 }
 
+/** 'YYYY-MM-DD' + 1 día, sin pasar por Date para no arrastrar zonas. */
+const sumarUnDia = (fecha: string): string => {
+  const [y, m, d] = fecha.split('-').map(Number);
+  if (!y || !m || !d) return fecha;
+  const siguiente = new Date(Date.UTC(y, m - 1, d + 1));
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${siguiente.getUTCFullYear()}-${pad(siguiente.getUTCMonth() + 1)}-${pad(siguiente.getUTCDate())}`;
+};
+
 const SELECT_COMPLETO =
   '*, items_detalle(*, productos(id, nombre, marca)), ' +
   'fuentes_cuentas!fk_transacciones_fuente(id, nombre, tipo), ' +
@@ -47,18 +56,21 @@ const SELECT_COMPLETO =
   'destino:fuentes_cuentas!transacciones_fuente_destino_id_fkey(id, nombre), ' +
   'establecimientos(id, nombre, tipo)';
 
-export function useTransaccionesDelMes(mes: string, zona: string) {
+export function useTransaccionesDelRango(desde: string, hasta: string, zona: string) {
   return useQuery({
-    queryKey: [...claves.transacciones(mes), zona],
+    queryKey: [...claves.transacciones(`${desde}_${hasta}`), zona],
     queryFn: async (): Promise<TransaccionConDetalle[]> => {
-      const rango = rangoDelMes(mes, zona);
-      if (!rango) return [];
+      // El extremo `hasta` va incluido, así que el corte es el día siguiente
+      // a medianoche en la zona del usuario.
+      const inicio = entradaDateAIso(desde, zona);
+      const fin = entradaDateAIso(sumarUnDia(hasta), zona);
+      if (!inicio || !fin) return [];
 
       const { data, error } = await supabase
         .from('transacciones')
         .select(SELECT_COMPLETO)
-        .gte('fecha', rango.inicio)
-        .lt('fecha', rango.fin)
+        .gte('fecha', inicio)
+        .lt('fecha', fin)
         .order('fecha', { ascending: false });
 
       if (error) throw new Error(mensajeDeError(error));

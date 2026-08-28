@@ -1,6 +1,6 @@
 /**
  * Tipos del esquema de Supabase, en el estado POSTERIOR a las migraciones
- * 0001-0015 (ver supabase/migrations/).
+ * 0001-0018 (ver supabase/migrations/).
  *
  * Escritos a mano porque el CLI de Supabase no está instalado. Tienen la
  * misma forma que los que genera `supabase gen types typescript`, así que se
@@ -327,23 +327,29 @@ export interface Database {
       presupuestos: {
         Row: {
           id: string;
+          nombre: string;
           categoria_id: string | null;
           monto: number;
-          vigente_desde: string;
+          fecha_inicio: string;
+          fecha_fin: string;
           created_at: string;
           user_id: string;
         };
         Insert: {
           id?: string;
+          nombre: string;
           categoria_id?: string | null;
           monto: number;
-          vigente_desde?: string;
+          fecha_inicio: string;
+          fecha_fin: string;
           user_id?: string;
         };
         Update: {
+          nombre?: string;
           categoria_id?: string | null;
           monto?: number;
-          vigente_desde?: string;
+          fecha_inicio?: string;
+          fecha_fin?: string;
         };
         Relationships: [
           {
@@ -355,13 +361,53 @@ export interface Database {
           },
         ];
       };
+
+      /**
+       * A qué cuentas aplica un presupuesto.
+       *
+       * Sin filas para un presupuesto significa «todas»: es la convención que
+       * evita tener que enumerar las tres cuentas para el caso habitual, que
+       * es justamente todas.
+       */
+      presupuesto_fuentes: {
+        Row: {
+          presupuesto_id: string;
+          fuente_id: string;
+          user_id: string;
+        };
+        Insert: {
+          presupuesto_id: string;
+          fuente_id: string;
+          user_id?: string;
+        };
+        Update: {
+          fuente_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'presupuesto_fuentes_presupuesto_id_fkey';
+            columns: ['presupuesto_id'];
+            isOneToOne: false;
+            referencedRelation: 'presupuestos';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'presupuesto_fuentes_fuente_id_fkey';
+            columns: ['fuente_id'];
+            isOneToOne: false;
+            referencedRelation: 'fuentes_cuentas';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
 
     Views: Record<string, never>;
 
     Functions: {
       saldos_por_fuente: {
-        Args: { p_mes: string; p_tz?: string };
+        // Saldo «a fecha de», no «del mes»: un rango termina cuando termina.
+        Args: { p_hasta: string; p_tz?: string };
         Returns: {
           fuente_id: string;
           nombre: string;
@@ -371,23 +417,31 @@ export interface Database {
           saldo_actual: number;
         }[];
       };
-      resumen_mensual: {
-        Args: { p_mes: string; p_tz?: string };
+      resumen_periodo: {
+        Args: { p_desde: string; p_hasta: string; p_tz?: string };
         // Las transferencias no aparecen aquí: no son ingreso ni gasto.
         Returns: {
           ingresos: number;
           gastos: number;
         }[];
       };
-      avance_presupuesto: {
-        Args: { p_mes: string; p_tz?: string };
+      avance_presupuestos: {
+        // Devuelve TODOS los presupuestos que tocan la fecha, no uno solo:
+        // un tope mensual y otro acotado para un viaje conviven.
+        Args: { p_referencia?: string; p_tz?: string };
         Returns: {
-          limite: number;
+          id: string;
+          nombre: string;
+          monto: number;
+          fecha_inicio: string;
+          fecha_fin: string;
+          categoria: string | null;
+          fuentes: string;
           gastado: number;
           dias_transcurridos: number;
-          dias_del_mes: number;
+          dias_totales: number;
           proyeccion: number;
-          es_mes_en_curso: boolean;
+          esta_activo: boolean;
         }[];
       };
       guardar_transaccion: {
@@ -405,15 +459,15 @@ export interface Database {
 
       // --- Análisis (migración 0016) ---
       gasto_por_categoria: {
-        Args: { p_mes: string; p_tz?: string };
+        Args: { p_desde: string; p_hasta: string; p_tz?: string };
         Returns: { categoria_padre: string; categoria: string; total: number; items: number }[];
       };
       evolucion_mensual: {
-        Args: { p_meses?: number; p_tz?: string };
+        Args: { p_desde: string; p_hasta: string; p_tz?: string };
         Returns: { mes: string; ingresos: number; gastos: number; limite: number }[];
       };
       gasto_por_establecimiento: {
-        Args: { p_mes: string; p_tz?: string };
+        Args: { p_desde: string; p_hasta: string; p_tz?: string };
         Returns: { establecimiento: string; tipo: string; total: number; visitas: number }[];
       };
       historial_producto: {
@@ -429,7 +483,7 @@ export interface Database {
         }[];
       };
       ranking_productos: {
-        Args: { p_mes: string; p_tz?: string; p_limite?: number };
+        Args: { p_desde: string; p_hasta: string; p_tz?: string; p_limite?: number };
         Returns: {
           producto: string;
           marca: string | null;
@@ -439,7 +493,7 @@ export interface Database {
         }[];
       };
       ahorro_descuentos: {
-        Args: { p_mes: string; p_tz?: string };
+        Args: { p_desde: string; p_hasta: string; p_tz?: string };
         Returns: { establecimiento: string; ahorrado: number; items: number }[];
       };
     };
@@ -470,8 +524,8 @@ export type NuevoPresupuesto = Tablas['presupuestos']['Insert'];
 
 type Funciones = Database['public']['Functions'];
 export type SaldoPorFuente = Funciones['saldos_por_fuente']['Returns'][number];
-export type ResumenMensual = Funciones['resumen_mensual']['Returns'][number];
-export type AvancePresupuesto = Funciones['avance_presupuesto']['Returns'][number];
+export type ResumenMensual = Funciones['resumen_periodo']['Returns'][number];
+export type AvancePresupuesto = Funciones['avance_presupuestos']['Returns'][number];
 
 /** Transacción con su detalle, como la devuelve la consulta anidada. */
 export type TransaccionConDetalle = Transaccion & {

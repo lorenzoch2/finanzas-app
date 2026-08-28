@@ -4,14 +4,17 @@ import { Loader2, Plus, Star, Trash2 } from 'lucide-react';
 import { useBorrarAjuste, useCrearAjuste, useAjustes } from '@/datos/ajustes';
 import { useCrearFuente, useFuentes, useMarcarPrincipal, useSaldos } from '@/datos/saldos';
 import FormularioTransferencia from '@/componentes/FormularioTransferencia';
+import AvisoMigracion from '@/componentes/AvisoMigracion';
+import { faltaMigracion } from '@/lib/supabase';
 import { useEstadoApp } from '@/lib/estadoApp';
 import { formatearCLP, parsearMonto } from '@/lib/dinero';
 import { formatearFechaSola, paraInputDate } from '@/lib/fecha';
 
 export default function Saldos() {
-  const { mes, zona } = useEstadoApp();
+  const { rango, zona } = useEstadoApp();
   const { data: fuentes = [] } = useFuentes();
-  const saldos = useSaldos(mes, zona);
+  // El saldo es «a fecha de»: el cierre del período que se está mirando.
+  const saldos = useSaldos(rango.hasta, zona);
   const ajustes = useAjustes();
 
   const crearFuente = useCrearFuente();
@@ -62,6 +65,8 @@ export default function Saldos() {
       setError(fallo instanceof Error ? fallo.message : 'No se pudo guardar el ajuste.');
     }
   };
+
+  if (saldos.error && faltaMigracion(saldos.error)) return <AvisoMigracion />;
 
   return (
     <section className="space-y-5">

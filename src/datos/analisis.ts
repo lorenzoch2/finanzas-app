@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { mensajeDeError, supabase } from '@/lib/supabase';
-import { primerDiaDelMes } from '@/lib/fecha';
+import { faltaMigracion, mensajeDeError, supabase } from '@/lib/supabase';
 import type { Database } from '@/lib/database.types';
 
 /**
@@ -14,16 +13,7 @@ import type { Database } from '@/lib/database.types';
 
 type Fn = Database['public']['Functions'];
 
-/**
- * ¿Falla porque la migración de análisis todavía no se ha aplicado?
- *
- * Sin esto, abrir la pantalla antes de correr 0016 mostraría un error de
- * PostgREST sobre una función que no existe, que no le dice a nadie qué hacer.
- */
-export const faltaMigracion = (error: unknown): boolean => {
-  const mensaje = error instanceof Error ? error.message : String(error ?? '');
-  return /could not find the function|does not exist|schema cache|PGRST202|42883/i.test(mensaje);
-};
+export { faltaMigracion };
 
 export type GastoCategoria = Fn['gasto_por_categoria']['Returns'][number];
 export type PuntoEvolucion = Fn['evolucion_mensual']['Returns'][number];
@@ -32,12 +22,13 @@ export type CompraProducto = Fn['historial_producto']['Returns'][number];
 export type ProductoRanking = Fn['ranking_productos']['Returns'][number];
 export type AhorroEstablecimiento = Fn['ahorro_descuentos']['Returns'][number];
 
-export function useGastoPorCategoria(mes: string, zona: string) {
+export function useGastoPorCategoria(desde: string, hasta: string, zona: string) {
   return useQuery({
-    queryKey: ['analisis', 'categorias', mes, zona],
+    queryKey: ['analisis', 'categorias', desde, hasta, zona],
     queryFn: async (): Promise<GastoCategoria[]> => {
       const { data, error } = await supabase.rpc('gasto_por_categoria', {
-        p_mes: primerDiaDelMes(mes),
+        p_desde: desde,
+        p_hasta: hasta,
         p_tz: zona,
       });
       if (error) throw new Error(mensajeDeError(error));
@@ -46,12 +37,13 @@ export function useGastoPorCategoria(mes: string, zona: string) {
   });
 }
 
-export function useEvolucion(meses: number, zona: string) {
+export function useEvolucion(desde: string, hasta: string, zona: string) {
   return useQuery({
-    queryKey: ['analisis', 'evolucion', meses, zona],
+    queryKey: ['analisis', 'evolucion', desde, hasta, zona],
     queryFn: async (): Promise<PuntoEvolucion[]> => {
       const { data, error } = await supabase.rpc('evolucion_mensual', {
-        p_meses: meses,
+        p_desde: desde,
+        p_hasta: hasta,
         p_tz: zona,
       });
       if (error) throw new Error(mensajeDeError(error));
@@ -61,12 +53,13 @@ export function useEvolucion(meses: number, zona: string) {
   });
 }
 
-export function useGastoPorEstablecimiento(mes: string, zona: string) {
+export function useGastoPorEstablecimiento(desde: string, hasta: string, zona: string) {
   return useQuery({
-    queryKey: ['analisis', 'establecimientos', mes, zona],
+    queryKey: ['analisis', 'establecimientos', desde, hasta, zona],
     queryFn: async (): Promise<GastoEstablecimiento[]> => {
       const { data, error } = await supabase.rpc('gasto_por_establecimiento', {
-        p_mes: primerDiaDelMes(mes),
+        p_desde: desde,
+        p_hasta: hasta,
         p_tz: zona,
       });
       if (error) throw new Error(mensajeDeError(error));
@@ -75,12 +68,13 @@ export function useGastoPorEstablecimiento(mes: string, zona: string) {
   });
 }
 
-export function useRankingProductos(mes: string, zona: string, limite = 12) {
+export function useRankingProductos(desde: string, hasta: string, zona: string, limite = 12) {
   return useQuery({
-    queryKey: ['analisis', 'ranking', mes, zona, limite],
+    queryKey: ['analisis', 'ranking', desde, hasta, zona, limite],
     queryFn: async (): Promise<ProductoRanking[]> => {
       const { data, error } = await supabase.rpc('ranking_productos', {
-        p_mes: primerDiaDelMes(mes),
+        p_desde: desde,
+        p_hasta: hasta,
         p_tz: zona,
         p_limite: limite,
       });
@@ -90,12 +84,13 @@ export function useRankingProductos(mes: string, zona: string, limite = 12) {
   });
 }
 
-export function useAhorroDescuentos(mes: string, zona: string) {
+export function useAhorroDescuentos(desde: string, hasta: string, zona: string) {
   return useQuery({
-    queryKey: ['analisis', 'ahorro', mes, zona],
+    queryKey: ['analisis', 'ahorro', desde, hasta, zona],
     queryFn: async (): Promise<AhorroEstablecimiento[]> => {
       const { data, error } = await supabase.rpc('ahorro_descuentos', {
-        p_mes: primerDiaDelMes(mes),
+        p_desde: desde,
+        p_hasta: hasta,
         p_tz: zona,
       });
       if (error) throw new Error(mensajeDeError(error));

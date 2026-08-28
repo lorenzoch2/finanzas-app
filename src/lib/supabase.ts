@@ -66,3 +66,16 @@ export const mensajeDeError = (error: unknown): string => {
   if (error instanceof Error) return error.message;
   return String(error);
 };
+
+/**
+ * ¿El fallo es que la base todavía no tiene la función que la app pide?
+ *
+ * Las migraciones y el código se despliegan por separado, así que hay una
+ * ventana en la que la app va por delante. Distinguir ese caso permite decir
+ * qué hacer en vez de mostrar un error de PostgREST sobre un nombre de
+ * función, que parece que la app está rota.
+ */
+export const faltaMigracion = (error: unknown): boolean => {
+  const mensaje = error instanceof Error ? error.message : String(error ?? '');
+  return /could not find the function|does not exist|schema cache|PGRST202|42883|42883/i.test(mensaje);
+};

@@ -1,11 +1,13 @@
 import { Link } from '@tanstack/react-router';
 import { ArrowDownLeft, ArrowUpRight, ChartColumn, Loader2, Star, TriangleAlert } from 'lucide-react';
 import { useResumen, useSaldos } from '@/datos/saldos';
-import { useAvancePresupuesto } from '@/datos/presupuesto';
+import { useAvancePresupuestos } from '@/datos/presupuesto';
 import { useEstadoApp } from '@/lib/estadoApp';
 import { formatearCLP } from '@/lib/dinero';
-import { formatearMes } from '@/lib/fecha';
+import { nombrarRango } from '@/lib/rango';
 import Medidor from '@/componentes/graficos/Medidor';
+import AvisoMigracion from '@/componentes/AvisoMigracion';
+import { faltaMigracion } from '@/lib/supabase';
 
 /**
  * Pantalla de resumen.
@@ -43,10 +45,11 @@ function Metrica({
 }
 
 export default function Dashboard() {
-  const { mes, zona } = useEstadoApp();
-  const saldos = useSaldos(mes, zona);
-  const resumen = useResumen(mes, zona);
-  const presupuesto = useAvancePresupuesto(mes, zona);
+  const { rango, zona } = useEstadoApp();
+  const saldos = useSaldos(rango.hasta, zona);
+  const resumen = useResumen(rango.desde, rango.hasta, zona);
+  // Los presupuestos activos al cierre del período que se está mirando.
+  const presupuestos = useAvancePresupuestos(rango.hasta, zona);
 
   const error = saldos.error ?? resumen.error;
 
@@ -59,6 +62,10 @@ export default function Dashboard() {
   );
 
   const margen = Number(resumen.data?.ingresos ?? 0) - Number(resumen.data?.gastos ?? 0);
+
+  // La app puede desplegarse antes que sus migraciones: decirlo en claro es
+  // mejor que un error sobre una funcion que no existe.
+  if (error && faltaMigracion(error)) return <AvisoMigracion />;
 
   return (
     <section className="space-y-5">
@@ -92,39 +99,42 @@ export default function Dashboard() {
           <Metrica
             icono={<ArrowUpRight size={16} aria-hidden />}
             tono="bg-entra-suave text-entra"
-            titulo={`Ingresos de ${formatearMes(mes)}`}
+            titulo={`Ingresos · ${nombrarRango(rango)}`}
             valor={formatearCLP(resumen.data?.ingresos)}
             cargando={resumen.isPending}
           />
           <Metrica
             icono={<ArrowDownLeft size={16} aria-hidden />}
             tono="bg-sale-suave text-sale"
-            titulo={`Gastos de ${formatearMes(mes)}`}
+            titulo={`Gastos · ${nombrarRango(rango)}`}
             valor={formatearCLP(resumen.data?.gastos)}
             cargando={resumen.isPending}
           />
           <Metrica
             icono={<ChartColumn size={16} aria-hidden />}
             tono={margen >= 0 ? 'bg-acento-suave text-acento' : 'bg-alerta-suave text-alerta'}
-            titulo="Margen del mes"
+            titulo="Margen del período"
             valor={formatearCLP(margen)}
             cargando={resumen.isPending}
           />
         </div>
       </div>
 
-      {/* Presupuesto: lo accionable va arriba, antes del detalle por cuenta. */}
-      {presupuesto.data && Number(presupuesto.data.limite) > 0 ? (
+      {/*
+        Presupuestos: lo accionable va arriba, antes del detalle por cuenta.
+        Pueden ser varios a la vez —un tope general y otro para un viaje—, así
+        que se listan todos los que tocan este período.
+      */}
+      {(presupuestos.data ?? []).length > 0 ? (
         <div className="card p-5 sm:p-6">
-          <h2 className="mb-4 text-lg font-bold text-tinta">Tu límite del mes</h2>
-          <Medidor
-            gastado={Number(presupuesto.data.gastado)}
-            limite={Number(presupuesto.data.limite)}
-            proyeccion={Number(presupuesto.data.proyeccion)}
-            diasTranscurridos={Number(presupuesto.data.dias_transcurridos)}
-            diasDelMes={Number(presupuesto.data.dias_del_mes)}
-            esMesEnCurso={Boolean(presupuesto.data.es_mes_en_curso)}
-          />
+          <h2 className="mb-4 text-lg font-bold text-tinta">
+            {(presupuestos.data ?? []).length === 1 ? 'Tu límite' : 'Tus límites'}
+          </h2>
+          <div className="space-y-6">
+            {presupuestos.data?.map((p) => (
+              <Medidor key={p.id} presupuesto={p} />
+            ))}
+          </div>
         </div>
       ) : null}
 

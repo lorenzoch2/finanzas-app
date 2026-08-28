@@ -9,20 +9,23 @@ import {
   useGastoPorEstablecimiento,
   useRankingProductos,
 } from '@/datos/analisis';
-import { useAvancePresupuesto } from '@/datos/presupuesto';
+import { useAvancePresupuestos } from '@/datos/presupuesto';
 import { useEstadoApp } from '@/lib/estadoApp';
 import { formatearCLP } from '@/lib/dinero';
-import { formatearMes } from '@/lib/fecha';
+import { mesAnterior } from '@/lib/fecha';
+import { nombrarRango, ultimoDiaDelMes } from '@/lib/rango';
 import BarrasHorizontales from '@/componentes/graficos/BarrasHorizontales';
 import LineaMeses from '@/componentes/graficos/LineaMeses';
 import Medidor from '@/componentes/graficos/Medidor';
 import type { Barra } from '@/componentes/graficos/BarrasHorizontales';
+import AvisoMigracion from '@/componentes/AvisoMigracion';
 
 /**
  * Vista de análisis.
  *
  * Cada bloque responde una pregunta concreta, y ese es el criterio para que
- * exista: un gráfico que no contesta nada solo ocupa pantalla.
+ * exista: un gráfico que no contesta nada solo ocupa pantalla. Por eso varios
+ * se ocultan o se cambian por una invitación cuando no hay con qué comparar.
  */
 
 function Seccion({
@@ -55,16 +58,37 @@ function Seccion({
   );
 }
 
+const retroceder = (mes: string, n: number): string => {
+  let actual = mes;
+  for (let i = 0; i < n; i += 1) actual = mesAnterior(actual);
+  return actual;
+};
+
 export default function Analisis() {
-  const { mes, zona } = useEstadoApp();
+  const { rango, zona } = useEstadoApp();
   const [nivel, setNivel] = useState<'categoria' | 'subcategoria'>('categoria');
 
-  const categorias = useGastoPorCategoria(mes, zona);
-  const evolucion = useEvolucion(12, zona);
-  const establecimientos = useGastoPorEstablecimiento(mes, zona);
-  const ranking = useRankingProductos(mes, zona, 10);
-  const ahorro = useAhorroDescuentos(mes, zona);
-  const presupuesto = useAvancePresupuesto(mes, zona);
+  /**
+   * Ventana de la evolución.
+   *
+   * Un mes suelto daría una línea de un punto, que no es una evolución. Si el
+   * período elegido es corto se amplía hacia atrás hasta seis meses, para que
+   * haya tendencia que mirar; si ya es largo, se respeta tal cual.
+   */
+  const ventana = useMemo(() => {
+    const mesInicio = rango.desde.slice(0, 7);
+    const mesFin = rango.hasta.slice(0, 7);
+
+    if (mesInicio < mesFin) return { desde: rango.desde, hasta: rango.hasta };
+    return { desde: `${retroceder(mesFin, 5)}-01`, hasta: ultimoDiaDelMes(mesFin) };
+  }, [rango.desde, rango.hasta]);
+
+  const categorias = useGastoPorCategoria(rango.desde, rango.hasta, zona);
+  const evolucion = useEvolucion(ventana.desde, ventana.hasta, zona);
+  const establecimientos = useGastoPorEstablecimiento(rango.desde, rango.hasta, zona);
+  const ranking = useRankingProductos(rango.desde, rango.hasta, zona, 10);
+  const ahorro = useAhorroDescuentos(rango.desde, rango.hasta, zona);
+  const presupuestos = useAvancePresupuestos(rango.hasta, zona);
 
   /**
    * Por categoría principal o por subcategoría.
@@ -101,14 +125,46 @@ export default function Analisis() {
       .sort((a, b) => b.valor - a.valor);
   }, [categorias.data, nivel]);
 
+  /**
+   * Meses de la evolución, sin los vacíos del principio.
+   *
+   * Con datos desde junio, arrancar en septiembre del año anterior dibuja
+   * nueve meses planos en cero que no dicen nada y aplastan la escala del
+   * resto. Se recortan los ceros iniciales; los intermedios se conservan,
+   * porque un mes sin gasto EN MEDIO de la serie sí es información.
+   */
+  const puntosEvolucion = useMemo(() => {
+    const datos = (evolucion.data ?? []).map((p) => ({
+      mes: p.mes,
+      ingresos: Number(p.ingresos),
+      gastos: Number(p.gastos),
+      limite: Number(p.limite),
+    }));
+
+    const primero = datos.findIndex((p) => p.ingresos > 0 || p.gastos > 0);
+    return primero <= 0 ? datos : datos.slice(primero);
+  }, [evolucion.data]);
+
+  const datosEstablecimiento = establecimientos.data ?? [];
+
+  /**
+   * Comparar establecimientos solo tiene sentido con más de uno. Una barra
+   * sola al 100% no compara nada: ocupa una pantalla entera para decir «todo
+   * tu gasto está aquí», que ya se sabía.
+   */
+  const hayQueComparar =
+    datosEstablecimiento.length > 1 ||
+    (datosEstablecimiento.length === 1 &&
+      datosEstablecimiento[0]?.establecimiento !== 'Sin especificar');
+
   const barrasEstablecimiento = useMemo<Barra[]>(
     () =>
-      (establecimientos.data ?? []).map((d) => ({
+      datosEstablecimiento.map((d) => ({
         etiqueta: d.establecimiento,
         valor: Number(d.total),
         detalle: `${d.visitas} ${Number(d.visitas) === 1 ? 'compra' : 'compras'}`,
       })),
-    [establecimientos.data],
+    [datosEstablecimiento],
   );
 
   const totalAhorrado = useMemo(
@@ -116,9 +172,7 @@ export default function Analisis() {
     [ahorro.data],
   );
 
-  const cargando =
-    categorias.isPending || evolucion.isPending || establecimientos.isPending;
-
+  const cargando = categorias.isPending || evolucion.isPending || establecimientos.isPending;
   const errorCarga = categorias.error ?? evolucion.error ?? establecimientos.error;
 
   if (cargando) {
@@ -129,55 +183,36 @@ export default function Analisis() {
     );
   }
 
-  // Sin la migración 0016 las funciones no existen, y el error de PostgREST no
-  // le dice a nadie qué hacer. Mejor decirlo en claro.
-  if (errorCarga && faltaMigracion(errorCarga)) {
-    return (
-      <div className="card p-6 text-center">
-        <TriangleAlert size={24} className="mx-auto mb-3 text-alerta" aria-hidden />
-        <h2 className="text-lg font-bold text-tinta">Falta aplicar una migración</h2>
-        <p className="mx-auto mt-2 max-w-md text-sm text-tinta-2">
-          Esta pantalla necesita las funciones de análisis, que se crean con la migración{' '}
-          <code className="rounded bg-elevado px-1.5 py-0.5 text-xs">0016_analisis</code>. Pégala
-          en el editor SQL de Supabase y vuelve aquí.
-        </p>
-        <p className="mt-3 text-xs text-tinta-3">
-          Solo crea funciones de lectura: no toca ni una fila de tus datos.
-        </p>
-      </div>
-    );
-  }
+  if (errorCarga && faltaMigracion(errorCarga)) return <AvisoMigracion />;
 
   if (errorCarga) {
     return (
       <p className="mensaje-error flex items-start gap-2">
         <TriangleAlert size={18} className="mt-0.5 shrink-0" aria-hidden />
-        <span>{errorCarga instanceof Error ? errorCarga.message : 'No se pudo cargar el análisis.'}</span>
+        <span>
+          {errorCarga instanceof Error ? errorCarga.message : 'No se pudo cargar el análisis.'}
+        </span>
       </p>
     );
   }
 
   return (
     <div className="space-y-5">
-      {/* Presupuesto primero: es lo accionable. El resto explica. */}
-      {presupuesto.data && presupuesto.data.limite > 0 ? (
+      {(presupuestos.data ?? []).length > 0 ? (
         <Seccion
-          titulo="Tu límite del mes"
+          titulo={(presupuestos.data ?? []).length === 1 ? 'Tu límite' : 'Tus límites'}
           descripcion="Los traspasos entre tus cuentas no cuentan aquí, así que la referencia no se mueve."
         >
-          <Medidor
-            gastado={Number(presupuesto.data.gastado)}
-            limite={Number(presupuesto.data.limite)}
-            proyeccion={Number(presupuesto.data.proyeccion)}
-            diasTranscurridos={Number(presupuesto.data.dias_transcurridos)}
-            diasDelMes={Number(presupuesto.data.dias_del_mes)}
-            esMesEnCurso={Boolean(presupuesto.data.es_mes_en_curso)}
-          />
+          <div className="space-y-6">
+            {presupuestos.data?.map((p) => (
+              <Medidor key={p.id} presupuesto={p} />
+            ))}
+          </div>
         </Seccion>
       ) : (
         <div className="card flex flex-wrap items-center justify-between gap-3 p-5">
           <p className="text-sm text-tinta-2">
-            Define un límite mensual y verás aquí tu avance y la proyección de cierre.
+            Define un límite de gasto y verás aquí tu avance y la proyección de cierre.
           </p>
           <Link to="/preferencias" className="button-secondary">
             Definir límite
@@ -187,7 +222,7 @@ export default function Analisis() {
 
       <Seccion
         titulo="En qué se te va la plata"
-        descripcion={`Gasto de ${formatearMes(mes)}, de mayor a menor.`}
+        descripcion={`${nombrarRango(rango)}, de mayor a menor.`}
         icono={<Tag size={18} className="text-tinta-3" aria-hidden />}
         accion={
           <div className="flex shrink-0 rounded-campo border border-borde bg-elevado p-1 text-xs">
@@ -197,8 +232,8 @@ export default function Analisis() {
                 type="button"
                 onClick={() => setNivel(n)}
                 aria-pressed={nivel === n}
-                className={`rounded-xl px-3 py-1.5 font-medium transition ${
-                  nivel === n ? 'bg-tarjeta text-acento shadow-sm' : 'text-tinta-3'
+                className={`rounded-[0.5rem] px-3 py-1.5 font-medium transition ${
+                  nivel === n ? 'bg-tarjeta text-acento shadow-suave' : 'text-tinta-3'
                 }`}
               >
                 {n === 'categoria' ? 'Categoría' : 'Detalle'}
@@ -207,53 +242,52 @@ export default function Analisis() {
           </div>
         }
       >
-        <BarrasHorizontales datos={barrasCategoria} vacio="No hay gastos este mes." />
+        <BarrasHorizontales datos={barrasCategoria} vacio="No hay gastos en este período." />
 
-        {/*
-          «Sin detalle» no es una categoría: es el gasto registrado sin
-          desglosar. Se muestra en vez de omitirse para que las barras sumen el
-          total real del mes. Si se dejara fuera, el gráfico invitaría a sacar
-          conclusiones sobre una parte del dinero creyendo que es el todo.
-        */}
         {barrasCategoria.some((b) => b.etiqueta === 'Sin detalle') ? (
           <p className="mt-4 rounded-campo bg-elevado px-4 py-3 text-xs text-tinta-2">
             <strong>Sin detalle</strong> es lo que registraste sin desglosar ítem por ítem. Aparece
-            para que el gráfico sume el total real del mes; a medida que detalles tus boletas, esa
-            barra se reparte entre las demás.
+            para que el gráfico sume el total real; a medida que detalles tus boletas, esa barra se
+            reparte entre las demás.
           </p>
         ) : null}
       </Seccion>
 
-      <Seccion
-        titulo="Cómo evoluciona"
-        descripcion="Últimos doce meses. La línea discontinua es tu límite."
-        icono={<TrendingUp size={18} className="text-tinta-3" aria-hidden />}
-      >
-        <LineaMeses
-          datos={(evolucion.data ?? []).map((p) => ({
-            mes: p.mes,
-            ingresos: Number(p.ingresos),
-            gastos: Number(p.gastos),
-            limite: Number(p.limite),
-          }))}
-        />
-      </Seccion>
+      {/* Con un solo mes no hay evolución que mostrar, solo un punto. */}
+      {puntosEvolucion.length > 1 ? (
+        <Seccion
+          titulo="Cómo evoluciona"
+          descripcion="La línea discontinua es tu límite."
+          icono={<TrendingUp size={18} className="text-tinta-3" aria-hidden />}
+        >
+          <LineaMeses datos={puntosEvolucion} />
+        </Seccion>
+      ) : null}
 
-      <Seccion
-        titulo="Dónde compras"
-        descripcion="Cuánto se lleva cada establecimiento este mes."
-        icono={<Store size={18} className="text-tinta-3" aria-hidden />}
-      >
-        <BarrasHorizontales
-          datos={barrasEstablecimiento}
-          vacio="Todavía no registras dónde compras. Al hacerlo podrás comparar precios entre locales."
-        />
-      </Seccion>
+      {hayQueComparar ? (
+        <Seccion
+          titulo="Dónde compras"
+          descripcion="Cuánto se lleva cada establecimiento."
+          icono={<Store size={18} className="text-tinta-3" aria-hidden />}
+        >
+          <BarrasHorizontales datos={barrasEstablecimiento} />
+        </Seccion>
+      ) : (
+        <div className="card flex flex-wrap items-center justify-between gap-3 p-5">
+          <p className="max-w-lg text-sm text-tinta-2">
+            Todavía no registras dónde compras. Al hacerlo verás qué local se lleva más y, con el
+            catálogo de productos, dónde te sale más barato lo mismo.
+          </p>
+          <Link to="/preferencias" className="button-secondary shrink-0">
+            <Store size={14} aria-hidden /> Añadir locales
+          </Link>
+        </div>
+      )}
 
       {totalAhorrado > 0 ? (
         <Seccion
           titulo="Lo que te ahorraste"
-          descripcion={`${formatearCLP(totalAhorrado)} en descuentos durante ${formatearMes(mes)}.`}
+          descripcion={`${formatearCLP(totalAhorrado)} en descuentos.`}
           icono={<TicketPercent size={18} className="text-tinta-3" aria-hidden />}
         >
           <BarrasHorizontales
@@ -266,12 +300,9 @@ export default function Analisis() {
         </Seccion>
       ) : null}
 
-      <Seccion
-        titulo="Qué productos pesan más"
-        descripcion="Los diez que más se llevan este mes."
-      >
+      <Seccion titulo="Qué productos pesan más" descripcion="Los diez que más se llevan.">
         {(ranking.data ?? []).length === 0 ? (
-          <p className="rounded-tarjeta bg-elevado p-6 text-center text-sm text-tinta-2">
+          <p className="rounded-campo bg-elevado p-6 text-center text-sm text-tinta-2">
             Detalla tus boletas ítem por ítem y aquí verás qué productos concretos pesan más.
           </p>
         ) : (

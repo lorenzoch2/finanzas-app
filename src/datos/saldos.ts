@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { claves } from '@/lib/query';
 import { mensajeDeError, supabase } from '@/lib/supabase';
-import { primerDiaDelMes } from '@/lib/fecha';
 import type { Fuente, NuevaFuente, ResumenMensual, SaldoPorFuente } from '@/lib/database.types';
 
 /**
@@ -14,12 +13,13 @@ import type { Fuente, NuevaFuente, ResumenMensual, SaldoPorFuente } from '@/lib/
  * fuente, y la regla de negocio vive en un solo lugar: la base.
  */
 
-export function useSaldos(mes: string, zona: string) {
+/** Saldo a la fecha de cierre del período que se está mirando. */
+export function useSaldos(hasta: string, zona: string) {
   return useQuery({
-    queryKey: [...claves.saldos(mes), zona],
+    queryKey: [...claves.saldos(hasta), zona],
     queryFn: async (): Promise<SaldoPorFuente[]> => {
       const { data, error } = await supabase.rpc('saldos_por_fuente', {
-        p_mes: primerDiaDelMes(mes),
+        p_hasta: hasta,
         p_tz: zona,
       });
       if (error) throw new Error(mensajeDeError(error));
@@ -28,12 +28,13 @@ export function useSaldos(mes: string, zona: string) {
   });
 }
 
-export function useResumen(mes: string, zona: string) {
+export function useResumen(desde: string, hasta: string, zona: string) {
   return useQuery({
-    queryKey: [...claves.resumen(mes), zona],
+    queryKey: [...claves.resumen(`${desde}_${hasta}`), zona],
     queryFn: async (): Promise<ResumenMensual> => {
-      const { data, error } = await supabase.rpc('resumen_mensual', {
-        p_mes: primerDiaDelMes(mes),
+      const { data, error } = await supabase.rpc('resumen_periodo', {
+        p_desde: desde,
+        p_hasta: hasta,
         p_tz: zona,
       });
       if (error) throw new Error(mensajeDeError(error));

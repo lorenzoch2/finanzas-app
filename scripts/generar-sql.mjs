@@ -33,10 +33,14 @@ import { aAscii } from './sql-ascii.mjs';
  *
  * Aplicadas: 0001-0015.
  */
-const MIGRACIONES = ['supabase/migrations/0016_analisis.sql'];
+const MIGRACIONES = [
+  'supabase/migrations/0016_analisis.sql',
+  'supabase/migrations/0017_presupuestos_por_periodo.sql',
+  'supabase/migrations/0018_rangos_de_fecha.sql',
+];
 
 const CABECERA = `-- =====================================================================
--- FINANZAPP v3 - MIGRACION PENDIENTE (0016)
+-- FINANZAPP v3 - MIGRACIONES PENDIENTES (0016 a 0018)
 --
 -- EJECUTALO ENTERO, DE UNA SOLA VEZ.
 -- No selecciones un trozo: los bloques "do $$ ... $$" son indivisibles y
@@ -55,11 +59,19 @@ const CABECERA = `-- ===========================================================
 --
 -- Es seguro volver a ejecutarlo si algo falla a medias.
 --
---   0016  Agregaciones para la vista de analisis: gasto por categoria y por
---         establecimiento, evolucion mensual, historial de precios de un
---         producto, ranking y ahorro por descuentos.
+--   0016  Agregaciones para la vista de analisis.
+--   0017  Presupuestos por periodo libre y por cuenta. Migra el limite
+--         mensual que hubiera al periodo equivalente.
+--   0018  Todas las consultas pasan a recibir un rango de fechas en vez de
+--         un mes. El mes deja de estar incrustado y pasa a ser el rango mas
+--         habitual, no el unico posible.
 --
--- Solo crea funciones de lectura: no toca ni una fila de datos.
+-- Solo 0017 toca datos, y solo para trasladar el limite mensual anterior a
+-- su periodo equivalente. El resto crea o reemplaza funciones.
+--
+-- IMPORTANTE: aplicalo junto con la version desplegada de la app. Las
+-- funciones cambian de firma, asi que una version antigua dejaria de
+-- encontrarlas.
 --
 -- Cada bloque va entre BEGIN/COMMIT: si uno falla se revierte entero.
 -- =====================================================================

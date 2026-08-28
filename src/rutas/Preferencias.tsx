@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Clock, LogOut, Palette, Store, Target, Trash2, User } from 'lucide-react';
+import { Clock, LogOut, Palette, Pencil, Plus, Store, Target, Trash2, User } from 'lucide-react';
 import { useSesion } from '@/auth/SesionProvider';
 import SelectorTema from '@/componentes/SelectorTema';
+import FormularioPresupuesto from '@/componentes/FormularioPresupuesto';
 import {
   TIPOS_ESTABLECIMIENTO,
   etiquetaTipo,
@@ -10,55 +11,34 @@ import {
   useCrearEstablecimiento,
   useEstablecimientos,
 } from '@/datos/establecimientos';
-import { useAvancePresupuesto, useFijarPresupuesto } from '@/datos/presupuesto';
+import { useBorrarPresupuesto, usePresupuestos } from '@/datos/presupuesto';
+import type { PresupuestoConFuentes } from '@/datos/presupuesto';
 import { useEstadoApp } from '@/lib/estadoApp';
-import { formatearCLP, parsearMonto } from '@/lib/dinero';
-import { ZONAS_DISPONIBLES, formatearFechaHora, formatearMes, mesActual } from '@/lib/fecha';
+import { formatearCLP } from '@/lib/dinero';
+import { ZONAS_DISPONIBLES, formatearFechaHora, mesActual } from '@/lib/fecha';
+import { diaLegible } from '@/lib/rango';
 import type { TipoEstablecimiento } from '@/lib/database.types';
 
 export default function Preferencias() {
   const { usuario, cerrarSesion } = useSesion();
-  const { mes, zona, setZona } = useEstadoApp();
+  const { zona, setZona } = useEstadoApp();
   const ahora = new Date();
 
-  const avance = useAvancePresupuesto(mes, zona);
-  const fijarPresupuesto = useFijarPresupuesto();
+  const presupuestos = usePresupuestos();
+  const borrarPresupuesto = useBorrarPresupuesto();
   const establecimientos = useEstablecimientos();
   const crearEstablecimiento = useCrearEstablecimiento();
   const borrarEstablecimiento = useBorrarEstablecimiento();
 
-  const [limite, setLimite] = useState('');
+  const [creando, setCreando] = useState(false);
+  const [editando, setEditando] = useState<PresupuestoConFuentes | null>(null);
   const [nombreLocal, setNombreLocal] = useState('');
   const [tipoLocal, setTipoLocal] = useState<TipoEstablecimiento>('supermercado');
   const [error, setError] = useState<string | null>(null);
-  const [aviso, setAviso] = useState<string | null>(null);
-
-  const limiteActual = Number(avance.data?.limite ?? 0);
-
-  const guardarLimite = async (evento: FormEvent) => {
-    evento.preventDefault();
-    setError(null);
-    setAviso(null);
-
-    const monto = parsearMonto(limite);
-    if (monto == null || monto < 0) {
-      setError('Escribe un monto válido.');
-      return;
-    }
-
-    try {
-      await fijarPresupuesto.mutateAsync({ monto, mes });
-      setLimite('');
-      setAviso(`Límite de ${formatearMes(mes)} fijado en ${formatearCLP(monto)}.`);
-    } catch (fallo) {
-      setError(fallo instanceof Error ? fallo.message : 'No se pudo guardar el límite.');
-    }
-  };
 
   const guardarLocal = async (evento: FormEvent) => {
     evento.preventDefault();
     setError(null);
-
     try {
       await crearEstablecimiento.mutateAsync({ nombre: nombreLocal, tipo: tipoLocal });
       setNombreLocal('');
@@ -67,59 +47,102 @@ export default function Preferencias() {
     }
   };
 
+  const cerrarFormulario = () => {
+    setCreando(false);
+    setEditando(null);
+  };
+
+  const lista = presupuestos.data ?? [];
+
   return (
     <section className="space-y-5">
       {error ? <p className="mensaje-error">{error}</p> : null}
-      {aviso ? <p className="mensaje-ok">{aviso}</p> : null}
 
-      {/* --------------------------------------------------- Presupuesto */}
+      {/* --------------------------------------------------- Presupuestos */}
       <div className="card p-5 sm:p-6">
-        <div className="mb-4 flex items-center gap-2">
-          <Target size={18} className="text-tinta-3" aria-hidden />
-          <h2 className="text-lg font-bold text-tinta">Límite de gasto mensual</h2>
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <h2 className="flex items-center gap-2 text-lg font-bold text-tinta">
+              <Target size={18} className="text-tinta-3" aria-hidden />
+              Límites de gasto
+            </h2>
+            <p className="mt-1 text-sm text-tinta-2">
+              Montos fijos, no porcentajes de lo que entra. Por eso un traspaso entre tus cuentas o
+              un ingreso fuera de lo normal no los mueven.
+            </p>
+          </div>
+
+          {!creando && !editando ? (
+            <button
+              type="button"
+              className="button-secondary shrink-0"
+              onClick={() => setCreando(true)}
+            >
+              <Plus size={16} aria-hidden /> Nuevo
+            </button>
+          ) : null}
         </div>
 
-        <p className="mb-4 text-sm text-tinta-2">
-          Es un monto fijo, no un porcentaje de lo que entra. Por eso un traspaso entre tus cuentas o
-          un ingreso fuera de lo normal no lo mueven: la referencia sigue siendo la misma justo el mes
-          en que más falta hace.
-        </p>
-
-        {limiteActual > 0 ? (
-          <div className="mb-4 rounded-campo bg-acento-suave px-4 py-3 text-sm">
-            <span className="text-tinta-2">Límite vigente para {formatearMes(mes)}: </span>
-            <strong className="text-acento">{formatearCLP(limiteActual)}</strong>
+        {creando || editando ? (
+          <div className="mb-5 rounded-tarjeta border border-borde bg-elevado p-4">
+            <FormularioPresupuesto
+              zona={zona}
+              edicion={editando}
+              onGuardado={cerrarFormulario}
+              onCancelar={cerrarFormulario}
+            />
           </div>
         ) : null}
 
-        <form onSubmit={(e) => void guardarLimite(e)} className="flex flex-col gap-2 sm:flex-row">
-          <div className="flex-1 space-y-1.5">
-            <label className="label" htmlFor="limite">
-              {limiteActual > 0 ? 'Cambiar el límite' : 'Definir límite'}
-            </label>
-            <input
-              id="limite"
-              className="input"
-              inputMode="decimal"
-              placeholder="800.000"
-              value={limite}
-              onChange={(e) => setLimite(e.target.value)}
-              required
-            />
-          </div>
-          <button
-            type="submit"
-            className="button-primary sm:mt-7 sm:w-auto"
-            disabled={fijarPresupuesto.isPending}
-          >
-            Guardar
-          </button>
-        </form>
+        {lista.length === 0 && !creando ? (
+          <p className="rounded-campo bg-elevado p-6 text-center text-sm text-tinta-2">
+            Todavía no tienes límites. Puedes poner uno mensual general, o uno acotado a unas fechas,
+            una categoría y unas cuentas concretas.
+          </p>
+        ) : (
+          <ul className="divide-y divide-borde-suave">
+            {lista.map((p) => {
+              const fuentes = p.presupuesto_fuentes.length;
+              return (
+                <li key={p.id} className="flex items-start justify-between gap-3 py-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-tinta">{p.nombre}</p>
+                    <p className="text-xs text-tinta-3">
+                      {diaLegible(p.fecha_inicio)} – {diaLegible(p.fecha_fin, true)}
+                      {' · '}
+                      {fuentes === 0 ? 'todas las cuentas' : `${fuentes} cuenta${fuentes > 1 ? 's' : ''}`}
+                    </p>
+                  </div>
 
-        <p className="mt-3 text-xs text-tinta-3">
-          Se aplica desde {formatearMes(mes)}. Los meses anteriores conservan el límite que regía
-          entonces, para que las comparaciones pasadas sigan siendo honestas.
-        </p>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="font-semibold tabular-nums text-tinta">
+                      {formatearCLP(p.monto)}
+                    </span>
+                    <button
+                      type="button"
+                      className="button-ghost px-2 py-1 text-tinta-3"
+                      onClick={() => {
+                        setEditando(p);
+                        setCreando(false);
+                      }}
+                      aria-label={`Editar ${p.nombre}`}
+                    >
+                      <Pencil size={15} aria-hidden />
+                    </button>
+                    <button
+                      type="button"
+                      className="button-ghost px-2 py-1 text-tinta-3 hover:text-sale"
+                      onClick={() => void borrarPresupuesto.mutateAsync(p.id)}
+                      aria-label={`Borrar ${p.nombre}`}
+                    >
+                      <Trash2 size={15} aria-hidden />
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
 
       {/* ----------------------------------------------- Establecimientos */}
@@ -152,7 +175,11 @@ export default function Preferencias() {
               </option>
             ))}
           </select>
-          <button type="submit" className="button-primary sm:w-auto" disabled={crearEstablecimiento.isPending}>
+          <button
+            type="submit"
+            className="button-primary sm:w-auto"
+            disabled={crearEstablecimiento.isPending}
+          >
             Agregar
           </button>
         </form>
@@ -207,8 +234,8 @@ export default function Preferencias() {
         </div>
 
         <p className="mb-4 text-sm text-tinta-2">
-          Define en qué momento empieza y termina cada día y cada mes. Con la zona equivocada, un
-          gasto de las 23:30 puede quedar contado en el día siguiente.
+          Define en qué momento empieza y termina cada día. Con la zona equivocada, un gasto de las
+          23:30 puede quedar contado en el día siguiente.
         </p>
 
         <select className="input" value={zona} onChange={(e) => setZona(e.target.value)}>

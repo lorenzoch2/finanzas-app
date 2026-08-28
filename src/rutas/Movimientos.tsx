@@ -11,15 +11,16 @@ import {
   TriangleAlert,
 } from 'lucide-react';
 import FormularioTransaccion from '@/componentes/FormularioTransaccion';
-import { useBorrarTransaccion, useTransaccionesDelMes } from '@/datos/transacciones';
+import { useBorrarTransaccion, useTransaccionesDelRango } from '@/datos/transacciones';
 import type { TransaccionConDetalle } from '@/lib/database.types';
 import { useEstadoApp } from '@/lib/estadoApp';
 import { formatearCLP } from '@/lib/dinero';
-import { formatearFechaHora, formatearMes } from '@/lib/fecha';
+import { formatearFechaHora } from '@/lib/fecha';
+import { nombrarRango } from '@/lib/rango';
 
 export default function Movimientos() {
-  const { mes, zona } = useEstadoApp();
-  const consulta = useTransaccionesDelMes(mes, zona);
+  const { rango, zona } = useEstadoApp();
+  const consulta = useTransaccionesDelRango(rango.desde, rango.hasta, zona);
   const borrar = useBorrarTransaccion();
 
   const [formularioAbierto, setFormularioAbierto] = useState(false);
@@ -80,7 +81,7 @@ export default function Movimientos() {
 
       <div className="card p-5 sm:p-6">
         <div className="mb-4 flex items-baseline justify-between gap-3">
-          <h2 className="text-lg font-bold text-tinta">{formatearMes(mes)}</h2>
+          <h2 className="text-lg font-bold text-tinta">{nombrarRango(rango)}</h2>
           <span className="text-sm text-tinta-3">
             {transacciones.length} {transacciones.length === 1 ? 'movimiento' : 'movimientos'}
           </span>

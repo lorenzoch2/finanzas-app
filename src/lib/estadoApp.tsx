@@ -1,32 +1,46 @@
-import { createContext, useContext, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { mesActual } from './fecha';
 import { useZonaHoraria } from './preferencias';
+import { rangoDeMes } from './rango';
+import type { Rango } from './rango';
 
 /**
- * Estado compartido por las pantallas: el mes que se está mirando y la zona
- * horaria con la que se interpreta.
+ * Estado compartido por las pantallas: el período que se está mirando y la
+ * zona horaria con la que se interpreta.
  *
- * Vive en un contexto porque el Dashboard y Movimientos deben mirar el mismo
- * mes: en la versión anterior cada componente tenía su propio `useState` con el
- * mes, así que cambiarlo en el Dashboard no afectaba a la lista de movimientos
- * y los dos números que se veían en pantalla podían ser de meses distintos.
+ * Vive en un contexto porque todas las vistas deben mirar el MISMO período: en
+ * la versión original cada componente tenía su propio mes y podían mostrarse a
+ * la vez dos números de meses distintos.
+ *
+ * Arranca en el mes actual porque es el 90% de los casos, pero el período es
+ * un rango libre: el mes es un atajo, no una limitación.
  */
 
 interface EstadoApp {
-  mes: string;
-  setMes: (mes: string) => void;
+  rango: Rango;
+  setRango: (rango: Rango) => void;
   zona: string;
   setZona: (zona: string) => void;
+  /**
+   * El mes del rango, si es que lo es. Lo usan las pantallas que solo tienen
+   * sentido mes a mes; las demás trabajan con `rango` directamente.
+   */
+  mes: string | undefined;
 }
 
 const Contexto = createContext<EstadoApp | null>(null);
 
 export function EstadoAppProvider({ children }: { children: ReactNode }) {
   const [zona, setZona] = useZonaHoraria();
-  const [mes, setMes] = useState(() => mesActual(zona));
+  const [rango, setRangoEstado] = useState<Rango>(() => rangoDeMes(mesActual(zona)));
 
-  const valor = useMemo<EstadoApp>(() => ({ mes, setMes, zona, setZona }), [mes, zona, setZona]);
+  const setRango = useCallback((nuevo: Rango) => setRangoEstado(nuevo), []);
+
+  const valor = useMemo<EstadoApp>(
+    () => ({ rango, setRango, zona, setZona, mes: rango.mes }),
+    [rango, setRango, zona, setZona],
+  );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;
 }

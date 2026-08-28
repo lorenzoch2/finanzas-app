@@ -10,7 +10,7 @@ import {
   WalletCards,
 } from 'lucide-react';
 import { useSesion } from '@/auth/SesionProvider';
-import SelectorMes from './SelectorMes';
+import SelectorRango from './SelectorRango';
 import BannerOffline from './BannerOffline';
 import SelectorTema from './SelectorTema';
 
@@ -49,7 +49,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             </div>
 
             <div className="flex shrink-0 items-center gap-1">
-              <SelectorMes />
+              <SelectorRango />
 
               <SelectorTema compacto />
 
