@@ -34,12 +34,12 @@ import { aAscii } from './sql-ascii.mjs';
  * Aplicadas: 0001-0015.
  */
 /**
- * Migraciones que TODAVIA no se han aplicado. Aplicadas: 0001-0018.
+ * Migraciones que TODAVIA no se han aplicado. Aplicadas: 0001-0019.
  */
-const MIGRACIONES = ['supabase/migrations/0019_ajustes_con_motivo.sql'];
+const MIGRACIONES = ['supabase/migrations/0020_transferencias_de_verdad.sql'];
 
 const CABECERA = `-- =====================================================================
--- FINANZAPP v3 - MIGRACION PENDIENTE (0019)
+-- FINANZAPP v3 - MIGRACION PENDIENTE (0020)
 --
 -- EJECUTALO ENTERO, DE UNA SOLA VEZ.
 -- No selecciones un trozo: los bloques "do $$ ... $$" son indivisibles y
@@ -58,18 +58,21 @@ const CABECERA = `-- ===========================================================
 --
 -- Es seguro volver a ejecutarlo si algo falla a medias.
 --
---   0019  Los ajustes de saldo dicen POR QUE se declara el saldo.
+--   0020  Que las transferencias funcionen de verdad.
 --
--- El problema que resuelve: hay dos formas de que entre dinero al sistema y
--- solo una cuenta como ingreso. De todo lo que ha entrado, el 40% llego por
--- ajuste de saldo, invisible para el libro. Por eso el margen salia negativo
--- mes tras mes: contaba los gastos y no el dinero que los respaldaba.
+-- El problema que resuelve: la 0014 anadio su restriccion de tipo, pero la
+-- tabla ya traia otra puesta por Postgres al crearla, que solo admite
+-- 'ingreso' y 'egreso'. Cuando dos CHECK conviven mandan las dos, asi que
+-- desde entonces el formulario de transferencias se ve y parece funcionar,
+-- pero cualquier traspaso falla al guardarse. Nunca salto porque no se llego
+-- a hacer ninguno.
 --
--- Toca datos una sola vez: marca los dos ajustes existentes como ingresos que
--- no se anotaron, que es lo que eran.
+-- No borra por nombre: busca en el catalogo cualquier CHECK sobre el tipo que
+-- no contemple 'transferencia'. Y lo comprueba de verdad, insertando una
+-- transferencia y deshaciendola.
 --
--- IMPORTANTE: aplicalo junto con la version desplegada. resumen_periodo y
--- evolucion_mensual cambian de firma.
+-- Aplicala ANTES de importar el historico: los ahorros mensuales entran como
+-- traspaso y sin esto la importacion se detiene.
 --
 -- Cada bloque va entre BEGIN/COMMIT: si uno falla se revierte entero.
 -- =====================================================================
